@@ -1,0 +1,73 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.comtel2000</groupId>
+	<artifactId>mokka7</artifactId>
+	<version>0.1.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<url>https://github.com/comtel2000/mokka7</url>
+	<name>Mokka7</name>
+	<description>Mokka7 is native port of Snap7 core in pure Java (fork of moka7 http://snap7.sourceforge.net/)</description>
+
+	<scm>
+		<url>https://github.com/comtel2000/mokka7</url>
+		<connection>scm:git:git://github.com/comtel2000/mokka7.git</connection>
+		<developerConnection>scm:git:git@github.com:comtel2000/mokka7.git</developerConnection>
+		<tag>HEAD</tag>
+	</scm>
+
+	<ciManagement>
+		<url>https://travis-ci.org/comtel2000/mokka7/</url>
+		<system>Travis</system>
+	</ciManagement>
+
+	<issueManagement>
+		<system>GitHub</system>
+		<url>https://github.com/comtel2000/mokka7/issues</url>
+	</issueManagement>
+
+	<developers>
+		<developer>
+			<id>comtel2000</id>
+			<name>J.Zimmermann</name>
+			<email>comtel2000@gmail.com</email>
+		</developer>
+	</developers>
+
+	<modules>
+		<module>mokka7-core</module>
+		<module>mokka7-samples</module>
+	</modules>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<junit.version>4.12</junit.version>
+		<slf4j.version>1.7.23</slf4j.version>
+	</properties>
+	<licenses>
+		<license>
+			<name>Eclipse Public License 1.0</name>
+			<url>https://eclipse.org/org/documents/epl-v10.php</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+		<dependencies>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+
+</project>
