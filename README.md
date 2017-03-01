@@ -1,5 +1,5 @@
 # Mokka7
-[![Build status](https://travis-ci.org/comtel2000/moka7.svg?branch=master)](https://travis-ci.org/comtel2000/moka7)
+[![Build status](https://travis-ci.org/comtel2000/mokka7.svg?branch=master)](https://travis-ci.org/comtel2000/mokka7)
 
 ## About
 Mokka7 is native port of Snap7 core in pure Java (fork of moka7 http://snap7.sourceforge.net/) and parts of Sharp7.
