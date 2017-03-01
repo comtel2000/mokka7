@@ -1,9 +1,25 @@
+/*
+ * PROJECT Mokka7 (fork of Moka7)
+ *
+ * Copyright (C) 2017 J.Zimmermann All rights reserved.
+ *
+ * Mokka7 is free software: you can redistribute it and/or modify it under the terms of the Lesser
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or under EPL Eclipse Public License 1.0.
+ *
+ * This means that you have to chose in advance which take before you import the library into your
+ * project.
+ *
+ * SNAP7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
+ * decide to adopt.
+ */
 package org.comtel2000.mokka7.client.presentation.connect;
 
 import java.net.URL;
 import java.util.Arrays;
 import java.util.ResourceBundle;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
@@ -11,22 +27,21 @@ import org.comtel2000.mokka7.S7Client;
 import org.comtel2000.mokka7.S7CpInfo;
 import org.comtel2000.mokka7.S7OrderCode;
 import org.comtel2000.mokka7.client.presentation.StatusBinding;
+import org.comtel2000.mokka7.client.service.CompletableService;
+import org.comtel2000.mokka7.client.service.PingWatchdogService;
 import org.comtel2000.mokka7.client.service.SessionManager;
-import org.comtel2000.mokka7.exception.S7Exception;
 import org.slf4j.LoggerFactory;
 
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 public class ConnectViewPresenter implements Initializable {
-
 
     private final static org.slf4j.Logger logger = LoggerFactory.getLogger(ConnectViewPresenter.class);
 
@@ -39,6 +54,9 @@ public class ConnectViewPresenter implements Initializable {
     @Inject
     S7Client client;
 
+    @Inject
+    PingWatchdogService pingService;
+
     @FXML
     private Button connect;
 
@@ -49,10 +67,10 @@ public class ConnectViewPresenter implements Initializable {
     private TextField host;
 
     @FXML
-    private ChoiceBox<Integer> rack;
+    private ComboBox<Integer> rack;
 
     @FXML
-    private ChoiceBox<Integer> slot;
+    private ComboBox<Integer> slot;
 
 
     @FXML
@@ -83,77 +101,76 @@ public class ConnectViewPresenter implements Initializable {
 
         session.bind(host.textProperty(), "connect.host");
 
-        connect.disableProperty().bind(log.connectedProperty());
-        host.disableProperty().bind(log.connectedProperty());
-        rack.disableProperty().bind(log.connectedProperty());
-        slot.disableProperty().bind(log.connectedProperty());
+        BooleanBinding disabled = log.connectedProperty().or(log.progressProperty());
+        connect.disableProperty().bind(disabled.or(host.textProperty().isEmpty()));
+        host.disableProperty().bind(disabled);
+        rack.disableProperty().bind(disabled);
+        slot.disableProperty().bind(disabled);
+        disconnect.disableProperty().bind(log.connectedProperty().not().or(log.progressProperty()));
 
-        disconnect.disableProperty().bind(log.connectedProperty().not());
 
-        log.connectedProperty().addListener((l, a, con) -> label0.setText(con ? "online" : "offine"));
-
+        log.connectedProperty().addListener((l, a, con) -> label0.setText(con ? String.format("online (%s)", host.getText()) : "offine"));
+        pingService.setOnPingFailed(this::pingFailed);
         reset();
     }
 
     @FXML
     public void connect() {
-        log.progressProperty().set(true);
-        CompletableFuture
-                .supplyAsync(() -> {
-                    try {
-                        return client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(), slot.getSelectionModel().getSelectedItem());
-                    } catch (S7Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .whenCompleteAsync(this::updateFields, Platform::runLater);
+        CompletableService.supply(() -> client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(), slot.getSelectionModel().getSelectedItem()))
+                .bindRunning(log.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields).start();
     }
 
     @FXML
     public void disconnect() {
-        CompletableFuture.runAsync(() -> client.disconnect()).whenCompleteAsync((a, th) -> log.connectedProperty().set(client.connected), Platform::runLater);
+        pingService.stop();
+        CompletableService.supply(() -> {
+            client.disconnect();
+            return true;
+        }).bindRunning(log.progressProperty()).onComplete((b, th) -> log.connectedProperty().set(client.connected)).start();
     }
 
-    private void updateFields(boolean result, Throwable th) {
-        report(th);
-        log.progressProperty().set(false);
+
+    private void pingFailed(Throwable th) {
+        logger.error("ping failed", th);
+        Platform.runLater(() -> log.statusTextProperty().set("connection lost to: " + host.getText()));
+        disconnect();
+    }
+
+    private void updateFields(Boolean result) {
+
+        if (result == null) {
+            return;
+        }
         log.connectedProperty().set(result);
         if (result) {
-            CompletableFuture.supplyAsync(() -> {
-                try {
-                    return client.getOrderCode();
-                } catch (S7Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }).whenCompleteAsync(this::update, Platform::runLater);
+            pingService.setHost(host.getText());
+            pingService.setTimeout(2000);
+            try {
+                pingService.start(1, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+            log.statusTextProperty().set("connected to: " + host.getText());
+            CompletableService.supply(() -> client.getOrderCode()).bindRunning(log.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
         } else {
             log.statusTextProperty().set("error code: " + result);
         }
     }
 
-    private void update(S7OrderCode code, Throwable th) {
-        logger.debug("{}", code);
-        report(th);
+    private void update(S7OrderCode code) {
         if (code != null) {
             label1.setText(code.getCode());
             label2.setText("v." + code.getFirmware());
         }
-        CompletableFuture.supplyAsync(() -> {
-            try {
-                return client.getCpInfo();
-            } catch (S7Exception e) {
-                throw new RuntimeException(e);
-            }
-        }).whenCompleteAsync(this::update, Platform::runLater);
+        CompletableService.supply(() -> client.getCpInfo()).bindRunning(log.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
     }
 
-    private void update(S7CpInfo info, Throwable th) {
+    private void update(S7CpInfo info) {
         logger.debug("{}", info);
-        report(th);
         if (info != null) {
             label3.setText("Max PDU: " + info.maxPduLength);
             label4.setText("Max Con: " + info.maxConnections);
-            label4.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
+            label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
         }
     }
 
@@ -168,7 +185,12 @@ public class ConnectViewPresenter implements Initializable {
 
     private void report(Throwable th) {
         if (th != null) {
-            log.statusTextProperty().set(th.getMessage());
+            logger.error(th.getMessage(), th);
+            if (th.getCause() != null){
+                log.statusTextProperty().set(String.format("%s (%s)", th.getMessage(), th.getCause().getMessage()));
+            }else{
+                log.statusTextProperty().set(th.getMessage());
+            }
         }
     }
 }

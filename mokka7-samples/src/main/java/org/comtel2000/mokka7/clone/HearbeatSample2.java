@@ -8,6 +8,12 @@ import org.comtel2000.mokka7.DataType;
 import org.comtel2000.mokka7.S7;
 import org.comtel2000.mokka7.S7Client;
 
+/**
+ * Clone bit of DB200.DBX34.0 to DB200.DBX34.1
+ *
+ * @author comtel
+ *
+ */
 public class HearbeatSample2 extends ClientRunner {
 
     public HearbeatSample2() {

@@ -29,6 +29,7 @@ import java.util.Date;
  * Step 7 Constants and Conversion helper class
  *
  * @author Davide
+ * @author comtel
  */
 public class S7 {
 
@@ -285,7 +286,7 @@ public class S7 {
     public static void setWordAt(byte[] buffer, int pos, int value) {
         setShortAt(buffer, pos, (short) value);
     }
-    
+
     public static void setByteAt(byte[] buffer, int pos, byte b) {
         buffer[pos] = b;
     }

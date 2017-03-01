@@ -17,6 +17,11 @@
  */
 package org.comtel2000.mokka7;
 
+/**
+ *
+ * @author comtel
+ *
+ */
 public class S7DataItem {
 
     public AreaType area;

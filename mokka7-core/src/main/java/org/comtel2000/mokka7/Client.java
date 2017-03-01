@@ -24,6 +24,11 @@ import java.util.Objects;
 
 import org.comtel2000.mokka7.exception.S7Exception;
 
+/**
+ *
+ * @author comtel
+ *
+ */
 public interface Client {
 
     final byte[] buffer = new byte[1024];
@@ -34,7 +39,7 @@ public interface Client {
 
     default Boolean readBit(AreaType area, int db, int start, int bitPos, byte[] buffer) throws S7Exception  {
         if (readArea(area, db, start * 8 + bitPos, 1, DataType.S7WLBit, buffer)) {
-            return S7.getBitAt(buffer, 0, bitPos);
+            return S7.getBitAt(buffer, 0, 0);
         }
         return null;
     }

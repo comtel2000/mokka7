@@ -17,9 +17,11 @@
  */
 package org.comtel2000.mokka7;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +36,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * @author Dave Nardella
- * @author comtel2000
+ * @author comtel
  */
 public class S7Client implements Client, ReturnCode {
 
@@ -271,8 +273,8 @@ public class S7Client implements Client, ReturnCode {
     private ConnectionType connType = ConnectionType.PG;
 
     private Socket tcpSocket;
-    private DataInputStream inStream = null;
-    private DataOutputStream outStream = null;
+    private InputStream inStream = null;
+    private OutputStream outStream = null;
 
     private String ipAddress;
 
@@ -1030,8 +1032,8 @@ public class S7Client implements Client, ReturnCode {
             tcpSocket = new Socket();
             tcpSocket.connect(new InetSocketAddress(ipAddress, ISO_TCP), 5000);
             tcpSocket.setTcpNoDelay(true);
-            inStream = new DataInputStream(tcpSocket.getInputStream());
-            outStream = new DataOutputStream(tcpSocket.getOutputStream());
+            inStream = new BufferedInputStream(tcpSocket.getInputStream());
+            outStream = new BufferedOutputStream(tcpSocket.getOutputStream());
         } catch (IOException e) {
             buildException(TCP_CONNECTION_FAILED, e);
         }
@@ -1040,10 +1042,9 @@ public class S7Client implements Client, ReturnCode {
 
     private boolean waitForData(int size, int timeout) throws S7Exception {
         int cnt = 0;
-        int available;
-        boolean expired = false;
         try {
-            available = inStream.available();
+            boolean expired = false;
+            int available = inStream.available();
             while ((available < size) && (!expired)) {
                 cnt++;
                 try {

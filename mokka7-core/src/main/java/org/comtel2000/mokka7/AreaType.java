@@ -17,6 +17,11 @@
  */
 package org.comtel2000.mokka7;
 
+/**
+ *
+ * @author comtel
+ *
+ */
 public enum AreaType {
 
     S7AreaPE(0x81),

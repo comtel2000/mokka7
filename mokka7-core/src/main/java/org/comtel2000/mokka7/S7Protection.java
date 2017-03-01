@@ -21,6 +21,7 @@ package org.comtel2000.mokka7;
  * See §33.19 of "System Software for S7-300/400 System and Standard Functions"
  *
  * @author Davide
+ * @author comtel
  *
  */
 public class S7Protection {

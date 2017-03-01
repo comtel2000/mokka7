@@ -17,6 +17,11 @@
  */
 package org.comtel2000.mokka7;
 
+/**
+ *
+ * @author comtel
+ *
+ */
 public interface ReturnCode {
 
     public static final int SUCCEED = 0x00;

@@ -21,6 +21,11 @@ import java.util.Arrays;
 
 import org.comtel2000.mokka7.exception.S7Exception;
 
+/**
+ *
+ * @author comtel
+ *
+ */
 public class S7MultiVar implements ReturnCode, AutoCloseable {
 
     private S7Client client;

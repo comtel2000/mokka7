@@ -17,6 +17,11 @@
  */
 package org.comtel2000.mokka7;
 
+/**
+ *
+ * @author comtel
+ *
+ */
 public enum PlcCpuStatus {
 
     UNKNOWN(0x00), STOP(0x04), RUN(0x08);

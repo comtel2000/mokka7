@@ -20,6 +20,7 @@ package org.comtel2000.mokka7;
 /**
  *
  * @author Davide
+ * @author comtel
  */
 public class S7Szl {
 
