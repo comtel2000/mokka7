@@ -43,16 +43,14 @@ public abstract class ClientRunner {
     public ClientRunner(String host, int rack, int slot) {
         S7Client client = new S7Client();
         try {
-            if (client.connect(host, rack, slot) == 0) {
+            if (client.connect(host, rack, slot)) {
                 S7OrderCode orderCode = client.getOrderCode();
-                checkResult(client.getLastError());
                 if (orderCode != null) {
                     logger.debug("Order Code\t: {}", orderCode.getCode());
                     logger.debug("Firmware\t: {}", orderCode.getFirmware());
                 }
 
                 S7CpInfo cpInfo = client.getCpInfo();
-                checkResult(client.getLastError());
                 if (cpInfo != null) {
                     logger.debug("Max PDU Length\t: {}", cpInfo.maxPduLength);
                     logger.debug("Max connections\t: {}", cpInfo.maxConnections);
@@ -60,9 +58,6 @@ public abstract class ClientRunner {
                     logger.debug("Max Bus (bps)\t: {}", cpInfo.maxBusRate);
                 }
                 call(client);
-
-            } else {
-                checkResult(client.getLastError());
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);

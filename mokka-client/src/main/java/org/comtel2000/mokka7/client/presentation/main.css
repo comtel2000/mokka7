@@ -1,0 +1,18 @@
+.root {
+	-fx-accent: #004595;
+    -fx-mark-color: #004595;
+	-fx-focus-color: #004595;
+	-fx-faint-focus-color: transparent;
+	-fx-body-color: derive(-fx-hover-base, -5%);
+}
+
+.button, .menu-button, .toggle-button, .combo-box, .choice-box , .text-field{
+	/* buttons do not have rounded corners */
+	 -fx-background-radius: 1.0;
+
+	/*-fx-background-insets: 0 0 -1 0,0,1;*/
+}
+
+.label {
+	-fx-text-fill: #505050;
+}

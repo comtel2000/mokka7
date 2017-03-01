@@ -15,9 +15,8 @@ public class ReadByteSample extends ClientRunner {
 
     @Override
     public void call(S7Client client) throws Exception {
-        int result;
-        result = client.readArea(AreaType.S7AreaDB, db, 0, 1, DataType.S7WLByte, buffer);
-        checkResult(result);
+
+        client.readArea(AreaType.S7AreaDB, db, 0, 1, DataType.S7WLByte, buffer);
         bitSet(buffer[0]);
         S7.hexDump(buffer, 16);
 
@@ -25,8 +24,7 @@ public class ReadByteSample extends ClientRunner {
         bitSet(b);
         S7.hexDump(buffer, 16);
 
-        result = client.readArea(AreaType.S7AreaDB, db, 1, 1, DataType.S7WLByte, buffer);
-        checkResult(result);
+        client.readArea(AreaType.S7AreaDB, db, 1, 1, DataType.S7WLByte, buffer);
         bitSet(buffer[0]);
         S7.hexDump(buffer, 16);
 

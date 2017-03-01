@@ -10,21 +10,19 @@ public class WriteMultiVarsSample extends ClientRunner {
 
     @Override
     public void call(S7Client client) throws Exception {
-        int result;
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.S7AreaDB, 201, 0, 1, DataType.S7WLByte, new byte[]{0x09});
-            mv.add(AreaType.S7AreaDB, 201, 1, 1, DataType.S7WLByte, new byte[]{0x08});
-            mv.add(AreaType.S7AreaDB, 201, 2, 1, DataType.S7WLByte, new byte[]{0x07});
-            mv.add(AreaType.S7AreaDB, 201, 3, 1, DataType.S7WLByte, new byte[]{0x06});
+            mv.add(AreaType.S7AreaDB, 201, 0, 1, DataType.S7WLByte, new byte[] { 0x09 });
+            mv.add(AreaType.S7AreaDB, 201, 1, 1, DataType.S7WLByte, new byte[] { 0x08 });
+            mv.add(AreaType.S7AreaDB, 201, 2, 1, DataType.S7WLByte, new byte[] { 0x07 });
+            mv.add(AreaType.S7AreaDB, 201, 3, 1, DataType.S7WLByte, new byte[] { 0x06 });
 
-            mv.add(AreaType.S7AreaDB, 201, 4, 1, DataType.S7WLByte, new byte[]{0x09});
-            mv.add(AreaType.S7AreaDB, 201, 5, 1, DataType.S7WLByte, new byte[]{0x08});
-            mv.add(AreaType.S7AreaDB, 201, 6, 1, DataType.S7WLByte, new byte[]{0x07});
-            mv.add(AreaType.S7AreaDB, 201, 7, 1, DataType.S7WLByte, new byte[]{0x06});
+            mv.add(AreaType.S7AreaDB, 201, 4, 1, DataType.S7WLByte, new byte[] { 0x09 });
+            mv.add(AreaType.S7AreaDB, 201, 5, 1, DataType.S7WLByte, new byte[] { 0x08 });
+            mv.add(AreaType.S7AreaDB, 201, 6, 1, DataType.S7WLByte, new byte[] { 0x07 });
+            mv.add(AreaType.S7AreaDB, 201, 7, 1, DataType.S7WLByte, new byte[] { 0x06 });
 
-            result = mv.write();
-            checkResult(result);
+            mv.write();
         }
 
         byte b = client.readByte(AreaType.S7AreaDB, 201, 0);
@@ -44,8 +42,8 @@ public class WriteMultiVarsSample extends ClientRunner {
 //            mv.add(AreaType.S7AreaDB, 201, 4, 1, DataType.S7WLDWord, Ints.toByteArray(151521030));
 //            mv.add(AreaType.S7AreaDB, 201, 8, 1, DataType.S7WLDWord, Ints.toByteArray(151521030));
 //
-//            result = mv.write();
-//            checkResult(result);
+//            mv.write();
+//
 //        }
 //
 //        Long l = client.readLong(AreaType.S7AreaDB, 201, 4);

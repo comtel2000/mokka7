@@ -1,8 +1,8 @@
 /*
  * PROJECT Mokka7 (fork of Moka7)
  *
- * Copyright (C) 2013, 2016 Davide Nardella All rights reserved.
- * Copyright (C) 2017 J.Zimmermann All rights reserved.
+ * Copyright (C) 2013, 2016 Davide Nardella All rights reserved. Copyright (C) 2017 J.Zimmermann All
+ * rights reserved.
  *
  * SNAP7 is free software: you can redistribute it and/or modify it under the terms of the Lesser
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -20,13 +20,14 @@ package org.comtel2000.mokka7;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.comtel2000.mokka7.exception.S7Exception;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +63,7 @@ public class S7Client implements Client, ReturnCode {
 
     private static final int MAX_PDU_SIZE = DEFAULT_PDU_SIZE_REQUESTED + ISO_HEADER_SIZE;
 
-    private static final int MinPduSize = 16;
+    private static final int MIN_PDU_SIZE = 16;
 
     /** TPKT + ISO COTP Header (Connection Oriented Transport Protocol) */
     private static final byte[] TPKT_ISO = { // 7 bytes
@@ -275,8 +276,6 @@ public class S7Client implements Client, ReturnCode {
 
     private String ipAddress;
 
-    public int lastError = 0;
-
     private byte lastPDUType;
     private byte localTSAP_HI;
     private byte localTSAP_LO;
@@ -291,103 +290,89 @@ public class S7Client implements Client, ReturnCode {
         Arrays.fill(buffer, (byte) 0);
     }
 
-    public int clearSessionPassword() {
-        lastError = 0;
+    public boolean clearSessionPassword() throws S7Exception {
         if (sendPacket(S7_CLR_PWD)) {
             int length = recvIsoPacket();
-            if (length > 30) {
-                if (S7.getWordAt(pdu, 27) != 0) {
-                    lastError = S7_FUNCTION_ERROR;
-                }
-            } else {
-                lastError = ISO_INVALID_PDU;
+            if (length < 31) {
+                buildException(ISO_INVALID_PDU);
             }
+            if (S7.getWordAt(pdu, 27) != 0) {
+                buildException(S7_FUNCTION_ERROR);
+            }
+            return true;
         }
-        return lastError;
+        return false;
     }
 
-    public int connect() {
+    public boolean connect() throws S7Exception {
         logger.debug("try to connect to {}", ipAddress);
-        lastError = 0;
-        if (!connected) {
-            // First stage : TCP Connection
-            if (openTcpConnect()) {
-                // Second stage : ISOTCP (ISO 8073) Connection
-                if (openIsoConnect()) {
-                    // Third stage : S7 PDU negotiation
-                    updateNegotiatePduLength();
-                }
-            }
-        }
-        connected = (lastError == 0);
 
-        // In case the connection is not completely established (TCP connection + ISO connection +
-        // PDU negotiation)
-        // we close the socket and its IO streams to revert the object back to pre-Connect() state
-        if (!connected) {
-            if (tcpSocket != null) {
-                try {
-                    tcpSocket.close();
-                } catch (IOException ex) {
+        try {
+            if (!connected) {
+                // First stage : TCP Connection
+                if (openTcpConnect()) {
+                    // Second stage : ISOTCP (ISO 8073) Connection
+                    if (openIsoConnect()) {
+                        // Third stage : S7 PDU negotiation
+                        updateNegotiatePduLength();
+                    }
                 }
             }
-            if (inStream != null) {
-                try {
-                    inStream.close();
-                } catch (IOException ex) {
-                }
-            }
-            if (outStream != null) {
-                try {
-                    outStream.close();
-                } catch (IOException ex) {
-                }
-            }
-            pduLength = 0;
+        } catch (S7Exception e) {
+            disconnect();
+            throw e;
         }
-
-        return lastError;
+        return connected = true;
     }
 
-    public int connect(String address, int rack, int slot) {
+    public boolean connect(String address, int rack, int slot) throws S7Exception {
         int remoteTSAP = (connType.getValue() << 8) + (rack * 0x20) + slot;
         setConnectionParams(address, 0x0100, remoteTSAP);
         return connect();
     }
 
 
-    public int dbGet(int db, byte[] buffer) {
+    public int dbGet(int db, byte[] buffer) throws S7Exception {
         S7BlockInfo block = getAgBlockInfo(S7.Block_DB, db);
         // Query the DB length
         if (block != null) {
             int sizeToRead = block.mc7Size;
             // Checks the room
-            if (sizeToRead <= buffer.length) {
-                if (readArea(AreaType.S7AreaDB, db, 0, sizeToRead, DataType.S7WLByte, buffer) == 0) {
-                    return sizeToRead;
-                }
-            } else {
-                lastError = S7_BUFFER_TOO_SMALL;
+            if (sizeToRead > buffer.length) {
+                buildException(S7_BUFFER_TOO_SMALL);
             }
+            if (readArea(AreaType.S7AreaDB, db, 0, sizeToRead, DataType.S7WLByte, buffer)) {
+                return sizeToRead;
+            }
+            buildException(S7_FUNCTION_ERROR);
         }
         return -1;
     }
 
     public void disconnect() {
-        if (connected) {
+        if (inStream != null) {
             try {
-                outStream.close();
                 inStream.close();
-                tcpSocket.close();
-                pduLength = 0;
             } catch (IOException ex) {
             }
-            connected = false;
         }
+        if (outStream != null) {
+            try {
+                outStream.close();
+            } catch (IOException ex) {
+            }
+        }
+        if (tcpSocket != null) {
+            try {
+                tcpSocket.close();
+            } catch (IOException ex) {
+            }
+        }
+        connected = false;
+        pduLength = 0;
     }
 
-    public S7BlockInfo getAgBlockInfo(int blockType, int blockNumber) {
-        lastError = 0;
+    public S7BlockInfo getAgBlockInfo(int blockType, int blockNumber) throws S7Exception {
         // Block Type
         S7_BI[30] = (byte) blockType;
         // Block Number
@@ -403,89 +388,82 @@ public class S7Client implements Client, ReturnCode {
 
         if (sendPacket(S7_BI)) {
             int length = recvIsoPacket();
-            if (length > 32) {
-                if ((S7.getWordAt(pdu, 27) == 0) && (pdu[29] == (byte) 0xff)) {
-                    return S7BlockInfo.of(pdu, 42);
-                }
-                lastError = S7_FUNCTION_ERROR;
-
-            } else {
-                lastError = ISO_INVALID_PDU;
+            if (length < 33) {
+                buildException(ISO_INVALID_PDU);
+            }
+            if ((S7.getWordAt(pdu, 27) == 0) && (pdu[29] == (byte) 0xff)) {
+                return S7BlockInfo.of(pdu, 42);
             }
         }
+        buildException(S7_FUNCTION_ERROR);
         return null;
     }
 
-    public S7CpInfo getCpInfo() {
+    public S7CpInfo getCpInfo() throws S7Exception {
         S7Szl szl = readSzl(0x0131, 0x0001, 1024);
         if (szl != null) {
             return S7CpInfo.of(szl.data, 0);
         }
+        buildException(S7_FUNCTION_ERROR);
         return null;
     }
 
-    public S7CpuInfo getCpuInfo() {
+    public S7CpuInfo getCpuInfo() throws S7Exception {
         S7Szl szl = readSzl(0x001C, 0x0000, 1024);
         if (szl != null) {
             return S7CpuInfo.of(szl.data, 0);
         }
+        buildException(S7_FUNCTION_ERROR);
         return null;
     }
 
-    public S7OrderCode getOrderCode() {
+    public S7OrderCode getOrderCode() throws S7Exception {
         S7Szl szl = readSzl(0x0011, 0x0000, 1024);
         if (szl != null) {
             return S7OrderCode.of(szl.data, 0, szl.dataSize);
         }
+        buildException(S7_FUNCTION_ERROR);
         return null;
     }
 
-    public LocalDateTime getPlcDateTime() {
-        lastError = 0;
+    public LocalDateTime getPlcDateTime() throws S7Exception {
         if (sendPacket(S7_GET_DT)) {
             int length = recvIsoPacket();
-            if (length > 30) {
-                if ((S7.getWordAt(pdu, 27) == 0) && (pdu[29] == (byte) 0xff)) {
-                    return S7.getlDateTimeAt(pdu, 34);
-                }
-                lastError = S7_FUNCTION_ERROR;
-            } else {
-                lastError = ISO_INVALID_PDU;
+            if (length < 31) {
+                buildException(ISO_INVALID_PDU);
+            }
+            if ((S7.getWordAt(pdu, 27) == 0) && (pdu[29] == (byte) 0xff)) {
+                return S7.getlDateTimeAt(pdu, 34);
             }
         }
+        buildException(S7_FUNCTION_ERROR);
         return null;
     }
 
-    public PlcCpuStatus getPlcStatus() {
-
-        lastError = 0;
+    public PlcCpuStatus getPlcStatus() throws S7Exception {
         if (sendPacket(S7_GET_STAT)) {
             int length = recvIsoPacket();
-            // the minimum expected
-            if (length > 30) {
-                if (S7.getWordAt(pdu, 27) == 0) {
-
-                    return PlcCpuStatus.valueOf(pdu[44]);
-
-                } else {
-                    lastError = S7_FUNCTION_ERROR;
-                }
-            } else {
-                lastError = ISO_INVALID_PDU;
+            if (length < 31) {
+                buildException(ISO_INVALID_PDU);
+            }
+            if (S7.getWordAt(pdu, 27) == 0) {
+                return PlcCpuStatus.valueOf(pdu[44]);
             }
         }
+        buildException(S7_FUNCTION_ERROR);
         return PlcCpuStatus.UNKNOWN;
     }
 
-    public S7Protection getProtection() {
+    public S7Protection getProtection() throws S7Exception {
         S7Szl szl = readSzl(0x0232, 0x0004, 256);
         if (szl != null) {
             return S7Protection.of(szl.data);
         }
+        buildException(S7_FUNCTION_ERROR);
         return null;
     }
 
-    private boolean openIsoConnect() {
+    private boolean openIsoConnect() throws S7Exception {
         ISO_CR[16] = localTSAP_HI;
         ISO_CR[17] = localTSAP_LO;
         ISO_CR[20] = remoteTSAP_HI;
@@ -494,39 +472,36 @@ public class S7Client implements Client, ReturnCode {
         if (sendPacket(ISO_CR)) {
             // gets the reply (if any)
             int length = recvIsoPacket();
-            if (lastError == 0) {
-                if (length == 22) {
-                    if (lastPDUType != (byte) 0xD0) {
-                        lastError = ISO_CONNECTION_FAILED;
-                    }
-                } else {
-                    lastError = ISO_INVALID_PDU;
-                }
+            if (length != 22) {
+                buildException(ISO_INVALID_PDU);
+            }
+            if (lastPDUType == (byte) 0xD0) {
+                return true;
             }
         }
-        return lastError == 0;
+        buildException(ISO_CONNECTION_FAILED);
+        return false;
     }
 
-    private boolean updateNegotiatePduLength() {
+    private boolean updateNegotiatePduLength() throws S7Exception {
         // Set PDU Size Requested
         S7.setWordAt(S7_PN, 23, DEFAULT_PDU_SIZE_REQUESTED);
         // Sends the connection request telegram
         if (sendPacket(S7_PN)) {
             int length = recvIsoPacket();
-            if (lastError == 0) {
-                // check S7 Error: 20 = size of Negotiate Answer
-                if ((length == 27) && (pdu[17] == 0) && (pdu[18] == 0)) {
-                    // get PDU Size Negotiated
-                    pduLength = S7.getWordAt(pdu, 25);
-                    logger.debug("PDU negotiated length: {} bytes", pduLength);
-                    if (pduLength > 0) {
-                        return true;
-                    }
-                    lastError = ISO_NEGOTIATING_PDU;
-                } else {
-                    lastError = ISO_NEGOTIATING_PDU;
-                }
+            if (length != 27) {
+                buildException(ISO_NEGOTIATING_PDU);
             }
+            // check S7 Error: 20 = size of Negotiate Answer
+            if (pdu[17] != (byte) 0 || pdu[18] != (byte) 0) {
+                buildException(ISO_NEGOTIATING_PDU);
+            }
+            pduLength = S7.getWordAt(pdu, 25);
+            logger.debug("PDU negotiated length: {} bytes", pduLength);
+            if (pduLength < 1) {
+                buildException(ISO_NEGOTIATING_PDU);
+            }
+            return true;
         }
         return false;
     }
@@ -535,63 +510,58 @@ public class S7Client implements Client, ReturnCode {
         return pduLength;
     }
 
-    public int setPlcColdStart() {
-        lastError = 0;
+    public boolean setPlcColdStart() throws S7Exception {
         if (sendPacket(S7_COLD_START)) {
             int length = recvIsoPacket();
-            if (length > 18) {
-                if (S7.getWordAt(pdu, 17) != 0) {
-                    lastError = S7_FUNCTION_ERROR;
-                }
-            } else {
-                lastError = ISO_INVALID_PDU;
+            if (length < 19) {
+                buildException(ISO_INVALID_PDU);
             }
+            if (S7.getWordAt(pdu, 17) != 0) {
+                buildException(S7_FUNCTION_ERROR);
+            }
+            return true;
         }
-        return lastError;
+        return false;
     }
 
-    public int setPlcHotStart() {
-        lastError = 0;
+    public boolean setPlcHotStart() throws S7Exception {
         if (sendPacket(S7_HOT_START)) {
             int length = recvIsoPacket();
-            if (length > 18) {
-                if (S7.getWordAt(pdu, 17) != 0) {
-                    lastError = S7_FUNCTION_ERROR;
-                }
-            } else {
-                lastError = ISO_INVALID_PDU;
+            if (length < 19) {
+                buildException(ISO_INVALID_PDU);
             }
+            if (S7.getWordAt(pdu, 17) != 0) {
+                buildException(S7_FUNCTION_ERROR);
+            }
+            return true;
         }
-        return lastError;
+        return false;
     }
 
-    public int setPlcStop() {
-        lastError = 0;
+    public boolean setPlcStop() throws S7Exception {
         if (sendPacket(S7_STOP)) {
             int length = recvIsoPacket();
-            if (length > 18) {
-                if (S7.getWordAt(pdu, 17) != 0) {
-                    lastError = S7_FUNCTION_ERROR;
-                }
-            } else {
-                lastError = ISO_INVALID_PDU;
+            if (length < 19) {
+                buildException(ISO_INVALID_PDU);
             }
+            if (S7.getWordAt(pdu, 17) != 0) {
+                buildException(S7_FUNCTION_ERROR);
+            }
+            return true;
         }
-        return lastError;
+        return false;
     }
 
-    public int readMultiVars(S7DataItem[] items, int itemsCount) {
+    public boolean readMultiVars(S7DataItem[] items, int itemsCount) throws S7Exception {
         int offset;
         int length;
         int itemSize;
         byte[] s7Item = new byte[12];
         byte[] s7ItemRead = new byte[1024];
 
-        lastError = 0;
-
         // Checks items
         if (itemsCount > MAX_VARS) {
-            return ERR_CLI_TOO_MANY_ITEMS;
+            buildException(ERR_CLI_TOO_MANY_ITEMS);
         }
 
         // Fills Header
@@ -621,31 +591,31 @@ public class S7Client implements Client, ReturnCode {
         }
 
         if (offset > pduLength) {
-            return ERR_CLI_SIZE_OVER_PDU;
+            buildException(ERR_CLI_SIZE_OVER_PDU);
         }
 
         S7.setWordAt(pdu, 2, offset); // Whole size
 
         if (!sendPacket(pdu, offset)) {
-            return lastError;
+            buildException(ERR_ISO_INVALID_PDU);
         }
         // get Answer
         length = recvIsoPacket();
-        if (lastError != 0) {
-            return lastError;
-        }
+
         // Check ISO length
         if (length < 22) {
-            return lastError = ERR_ISO_INVALID_PDU; // PDU too Small
+            buildException(ERR_ISO_INVALID_PDU);
         }
         // Check Global Operation Result
-        if ((lastError = ReturnCode.getCpuError(S7.getWordAt(pdu, 17))) != 0) {
-            return lastError;
+        int globalResult = S7.getWordAt(pdu, 17);
+        if (globalResult != 0) {
+            buildException(ReturnCode.getCpuError(globalResult));
         }
+
         // get true itemsCount
         int itemsRead = S7.getByteAt(pdu, 20);
         if ((itemsRead != itemsCount) || (itemsRead > MAX_VARS)) {
-            return lastError = ERR_CLI_INVALID_PLC_ANSWER;
+            buildException(ERR_CLI_INVALID_PLC_ANSWER);
         }
         // get Data
         offset = 21;
@@ -657,7 +627,6 @@ public class S7Client implements Client, ReturnCode {
                 if ((s7ItemRead[1] != TS_RESOCTET) && (s7ItemRead[1] != TS_RESREAL) && (s7ItemRead[1] != TS_RESBIT)) {
                     itemSize = itemSize >> 3;
                 }
-                System.err.println(items[c].data.length + " " + itemSize);
                 System.arraycopy(s7ItemRead, 4, items[c].data, 0, Math.min(items[c].data.length, itemSize));
                 // Marshal.Copy(s7ItemRead, 4, items[c].pData, itemSize);
                 items[c].result = 0;
@@ -671,10 +640,10 @@ public class S7Client implements Client, ReturnCode {
             }
         }
 
-        return lastError;
+        return true;
     }
 
-    public int writeMultiVars(S7DataItem[] items, int itemsCount) {
+    public boolean writeMultiVars(S7DataItem[] items, int itemsCount) throws S7Exception {
         int offset;
         int parLength;
         int dataLength;
@@ -682,11 +651,9 @@ public class S7Client implements Client, ReturnCode {
         byte[] s7ParItem = new byte[S7_MWR_PARAM.length];
         byte[] dataItem = new byte[1024];
 
-        lastError = 0;
-
         // Checks items
         if (itemsCount > MAX_VARS) {
-            return ERR_CLI_TOO_MANY_ITEMS;
+            buildException(ERR_CLI_TOO_MANY_ITEMS);
         }
         // Fills Header
         System.arraycopy(S7_MWR_HEADER, 0, pdu, 0, S7_MWR_HEADER.length);
@@ -752,7 +719,7 @@ public class S7Client implements Client, ReturnCode {
 
         // Checks the size
         if (offset > pduLength) {
-            return ERR_CLI_SIZE_OVER_PDU;
+            buildException(ERR_CLI_SIZE_OVER_PDU);
         }
 
         S7.setWordAt(pdu, 2, offset); // Whole size
@@ -760,43 +727,37 @@ public class S7Client implements Client, ReturnCode {
         sendPacket(pdu, offset);
 
         recvIsoPacket();
-        if (lastError == 0) {
-            // Check Global Operation Result
-            lastError = ReturnCode.getCpuError(S7.getWordAt(pdu, 17));
-            if (lastError != 0) {
-                return lastError;
-            }
-            // get true itemsCount
-            int ItemsWritten = S7.getByteAt(pdu, 20);
-            if ((ItemsWritten != itemsCount) || (ItemsWritten > MAX_VARS)) {
-                lastError = ERR_CLI_INVALID_PLC_ANSWER;
-                return lastError;
-            }
-
-            for (int c = 0; c < itemsCount; c++) {
-                if (pdu[c + 21] == 0xff) {
-                    items[c].result = 0;
-                } else {
-                    items[c].result = ReturnCode.getCpuError(pdu[c + 21]);
-                }
-            }
-
+        // Check Global Operation Result
+        int globalResult = S7.getWordAt(pdu, 17);
+        if (globalResult != 0) {
+            buildException(ReturnCode.getCpuError(globalResult));
         }
-        return lastError;
+        // get true itemsCount
+        int itemsWritten = S7.getByteAt(pdu, 20);
+        if ((itemsWritten != itemsCount) || (itemsWritten > MAX_VARS)) {
+            buildException(ERR_CLI_INVALID_PLC_ANSWER);
+        }
+
+        for (int c = 0; c < itemsCount; c++) {
+            if (pdu[c + 21] == 0xff) {
+                items[c].result = 0;
+            } else {
+                items[c].result = ReturnCode.getCpuError(pdu[c + 21]);
+            }
+        }
+        return true;
     }
 
     @Override
-    public int readArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer) {
+    public boolean readArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer) throws S7Exception {
         int address;
         int numElements, maxElements, totElements;
-        int SizeRequested;
+        int sizeRequested;
         int length;
         int offset = 0;
         int wordSize = 1;
         int _start = start;
         int _amount = amount;
-
-        lastError = 0;
 
         DataType _type;
         switch (area) {
@@ -811,10 +772,9 @@ public class S7Client implements Client, ReturnCode {
                 break;
         }
 
-        // Calc Word size
         wordSize = DataType.getByteLength(_type);
         if (wordSize == 0) {
-            return ERR_CLI_INVALID_WORD_LEN;
+            buildException(ERR_CLI_INVALID_WORD_LEN);
         }
 
         if (_type == DataType.S7WLBit) {
@@ -830,13 +790,13 @@ public class S7Client implements Client, ReturnCode {
         maxElements = (pduLength - 18) / wordSize; // 18 = Reply telegram header
         totElements = _amount;
 
-        while ((totElements > 0) && (lastError == 0)) {
+        while (totElements > 0) {
             numElements = totElements;
             if (numElements > maxElements) {
                 numElements = maxElements;
             }
 
-            SizeRequested = numElements * wordSize;
+            sizeRequested = numElements * wordSize;
 
             // Setup the telegram
             System.arraycopy(S7_RW, 0, pdu, 0, SIZE_RD);
@@ -865,112 +825,24 @@ public class S7Client implements Client, ReturnCode {
             address = address >> 8;
             pdu[28] = (byte) (address & 0xff);
 
-            sendPacket(pdu, SIZE_RD);
-            if (lastError == 0) {
+            if (sendPacket(pdu, SIZE_RD)) {
                 length = recvIsoPacket();
-                if (lastError == 0) {
-                    if (length < 25) {
-                        lastError = ERR_ISO_INVALID_DATA_SIZE;
-                    } else {
-                        if (pdu[21] != (byte) 0xff) {
-                            lastError = ReturnCode.getCpuError(pdu[21]);
-                        } else {
-                            System.arraycopy(pdu, 25, buffer, offset, SizeRequested);
-                            offset += SizeRequested;
-                        }
-                    }
+                if (length < 25) {
+                    buildException(ERR_ISO_INVALID_DATA_SIZE);
                 }
+                if (pdu[21] != (byte) 0xff) {
+                    buildException(ReturnCode.getCpuError(pdu[21]));
+                }
+                System.arraycopy(pdu, 25, buffer, offset, sizeRequested);
+                offset += sizeRequested;
             }
             totElements -= numElements;
             _start += numElements * wordSize;
         }
-        return lastError;
+        return true;
     }
 
-    @Deprecated
-    public int readArea(AreaType area, int db, int start, int amount, byte[] Data) {
-        int address;
-        int numElements;
-        int maxElements;
-        int totElements;
-        int SizeRequested;
-        int length;
-        int offset = 0;
-        int wordSize = 1;
-
-        lastError = 0;
-
-        // If we are addressing Timers or counters the element size is 2
-        if ((area == AreaType.S7AreaCT) || (area == AreaType.S7AreaTM)) {
-            wordSize = 2;
-        }
-
-        maxElements = (pduLength - 18) / wordSize; // 18 = Reply telegram header
-        totElements = amount;
-
-        while ((totElements > 0) && (lastError == 0)) {
-            numElements = totElements;
-            if (numElements > maxElements) {
-                numElements = maxElements;
-            }
-
-            SizeRequested = numElements * wordSize;
-
-            // Setup the telegram
-            System.arraycopy(S7_RW, 0, pdu, 0, SIZE_RD);
-            // Set DB Number
-            pdu[27] = area.getValue();
-            // Set area
-            if (area == AreaType.S7AreaDB) {
-                S7.setWordAt(pdu, 25, db);
-            }
-
-            // Adjusts start and word length
-            if ((area == AreaType.S7AreaCT) || (area == AreaType.S7AreaTM)) {
-                address = start;
-                if (area == AreaType.S7AreaCT) {
-                    pdu[22] = DataType.S7WLCounter.getValue();
-                } else {
-                    pdu[22] = DataType.S7WLTimer.getValue();
-                }
-            } else {
-                address = start << 3;
-            }
-
-            // Num elements
-            S7.setWordAt(pdu, 23, numElements);
-
-            // address into the PLC (only 3 bytes)
-            pdu[30] = (byte) (address & 0xff);
-            address = address >> 8;
-            pdu[29] = (byte) (address & 0xff);
-            address = address >> 8;
-            pdu[28] = (byte) (address & 0xff);
-
-            sendPacket(pdu, SIZE_RD);
-            if (lastError == 0) {
-                length = recvIsoPacket();
-                if (lastError == 0) {
-                    if (length >= 25) {
-                        if ((length - 25 == SizeRequested) && (pdu[21] == (byte) 0xff)) {
-                            System.arraycopy(pdu, 25, Data, offset, SizeRequested);
-                            offset += SizeRequested;
-                        } else {
-                            lastError = S7_DATA_READ;
-                        }
-                    } else {
-                        lastError = ISO_INVALID_PDU;
-                    }
-                }
-            }
-
-            totElements -= numElements;
-            start += numElements * wordSize;
-        }
-        return lastError;
-    }
-
-    public S7Szl readSzl(int id, int index, int bufferSize) {
+    public S7Szl readSzl(int id, int index, int bufferSize) throws S7Exception {
         final S7Szl szl = new S7Szl(bufferSize);
         int length;
         int dataSZL;
@@ -980,7 +852,6 @@ public class S7Client implements Client, ReturnCode {
         byte seq_in = 0x00;
         int seq_out = 0x0000;
 
-        lastError = 0;
         szl.dataSize = 0;
         do {
             if (first) {
@@ -993,118 +864,95 @@ public class S7Client implements Client, ReturnCode {
                 pdu[24] = seq_in;
                 sendPacket(S7_SZL_NEXT);
             }
-            if (lastError != 0) {
-                return null;
-            }
 
             length = recvIsoPacket();
-            if (lastError == 0) {
-                if (first) {
-                    if (length > 32) // the minimum expected
-                    {
-                        if ((S7.getWordAt(pdu, 27) == 0) && (pdu[29] == (byte) 0xff)) {
-                            // gets amount of this slice
-                            dataSZL = S7.getWordAt(pdu, 31) - 8; // Skips extra params (ID, Index
-                                                                 // ...)
-                            done = pdu[26] == 0x00;
-                            seq_in = pdu[24]; // Slice sequence
+            if (length < 33) {
+                buildException(ISO_INVALID_PDU);
+            }
+            if ((S7.getWordAt(pdu, 27) != 0) || (pdu[29] != (byte) 0xff)) {
+                buildException(S7_FUNCTION_ERROR);
+            }
+            if (first) {
+                // gets amount of this slice
+                // Skips extra params (ID, Index ...)
+                dataSZL = S7.getWordAt(pdu, 31) - 8;
+                done = pdu[26] == 0x00;
+                seq_in = pdu[24]; // Slice sequence
 
-                            szl.lenthdr = S7.getWordAt(pdu, 37);
-                            szl.n_dr = S7.getWordAt(pdu, 39);
-                            szl.copy(pdu, 41, offset, dataSZL);
-                            offset += dataSZL;
-                            szl.dataSize += dataSZL;
-                        } else {
-                            lastError = S7_FUNCTION_ERROR;
-                        }
-                    } else {
-                        lastError = ISO_INVALID_PDU;
-                    }
-                } else {
-                    if (length > 32) // the minimum expected
-                    {
-                        if ((S7.getWordAt(pdu, 27) == 0) && (pdu[29] == (byte) 0xff)) {
-                            // gets amount of this slice
-                            dataSZL = S7.getWordAt(pdu, 31);
-                            done = pdu[26] == 0x00;
-                            seq_in = pdu[24]; // Slice sequence
-                            szl.copy(pdu, 37, offset, dataSZL);
-                            offset += dataSZL;
-                            szl.dataSize += dataSZL;
-                        } else {
-                            lastError = S7_FUNCTION_ERROR;
-                        }
-                    } else {
-                        lastError = ISO_INVALID_PDU;
-                    }
-                }
+                szl.lenthdr = S7.getWordAt(pdu, 37);
+                szl.n_dr = S7.getWordAt(pdu, 39);
+                szl.copy(pdu, 41, offset, dataSZL);
+                offset += dataSZL;
+                szl.dataSize += dataSZL;
+            } else {
+                // gets amount of this slice
+                dataSZL = S7.getWordAt(pdu, 31);
+                done = pdu[26] == 0x00;
+                seq_in = pdu[24]; // Slice sequence
+                szl.copy(pdu, 37, offset, dataSZL);
+                offset += dataSZL;
+                szl.dataSize += dataSZL;
             }
             first = false;
-        } while (!done && (lastError == 0));
+        } while (!done);
 
-        return lastError == 0 ? szl : null;
+        return szl;
     }
 
-    private int recvIsoPacket() {
+    private int recvIsoPacket() throws S7Exception {
         boolean done = false;
         int size = 0;
-        while ((lastError == 0) && !done) {
+        while (!done) {
             // get TPKT (4 bytes)
             recvPacket(pdu, 0, 4);
-            if (lastError == 0) {
-                size = S7.getWordAt(pdu, 2);
-                // Check 0 bytes Data Packet (only TPKT+COTP = 7 bytes)
-                if (size == ISO_HEADER_SIZE) {
-                    recvPacket(pdu, 4, 3); // Skip remaining 3 bytes and Done is still false
-                } else {
-                    if ((size > MAX_PDU_SIZE) || (size < MinPduSize)) {
-                        lastError = ISO_INVALID_PDU;
-                    } else {
-                        done = true; // a valid length !=7 && >16 && <247
-                    }
+            size = S7.getWordAt(pdu, 2);
+            // Check 0 bytes Data Packet (only TPKT+COTP = 7 bytes)
+            if (size == ISO_HEADER_SIZE) {
+                recvPacket(pdu, 4, 3); // Skip remaining 3 bytes and Done is still false
+            } else {
+                if (size > MAX_PDU_SIZE || size < MIN_PDU_SIZE) {
+                    buildException(ISO_INVALID_PDU);
                 }
+                done = true; // a valid length !=7 && >16 && <247
             }
         }
-        if (lastError == 0) {
-            // Skip remaining 3 COTP bytes
-            recvPacket(pdu, 4, 3);
-            // Stores PDU Type, we need it
-            lastPDUType = pdu[5];
-            // Receives the S7 Payload
-            recvPacket(pdu, 7, size - ISO_HEADER_SIZE);
-        }
 
-        return lastError == 0 ? size : 0;
+        // Skip remaining 3 COTP bytes
+        recvPacket(pdu, 4, 3);
+        // Stores PDU Type, we need it
+        lastPDUType = pdu[5];
+        // Receives the S7 Payload
+        recvPacket(pdu, 7, size - ISO_HEADER_SIZE);
+
+        return size;
     }
 
-    private int recvPacket(byte[] buffer, int start, int size) {
+    private int recvPacket(byte[] buffer, int start, int size) throws S7Exception {
         int bytesRead = 0;
-        lastError = waitForData(size, recvTimeout);
-        if (lastError == 0) {
+        if (waitForData(size, recvTimeout)) {
             try {
                 bytesRead = inStream.read(buffer, start, size);
-            } catch (IOException ex) {
-                lastError = TCP_DATA_RECV;
+            } catch (IOException e) {
+                buildException(TCP_DATA_RECV, e);
             }
             if (bytesRead == 0) {
-                lastError = TCP_CONNECTION_RESET;
+                buildException(TCP_CONNECTION_RESET);
             }
         }
-        return lastError;
+        return bytesRead;
     }
 
-    private boolean sendPacket(byte[] buffer) {
+    private boolean sendPacket(byte[] buffer) throws S7Exception {
         return sendPacket(buffer, buffer.length);
     }
 
-    private boolean sendPacket(byte[] buffer, int Len) {
-        lastError = 0;
+    private boolean sendPacket(byte[] buffer, int len) throws S7Exception {
         try {
-            outStream.write(buffer, 0, Len);
+            outStream.write(buffer, 0, len);
             outStream.flush();
             return true;
-        } catch (IOException ex) {
-            lastError = TCP_DATA_SEND;
+        } catch (Exception e) {
+            buildException(TCP_DATA_SEND, e);
         }
         return false;
     }
@@ -1123,35 +971,29 @@ public class S7Client implements Client, ReturnCode {
         connType = Objects.requireNonNull(type);
     }
 
-    public int setPlcDateTime(LocalDateTime dateTime) {
-        int length;
+    public boolean setPlcDateTime(LocalDateTime dateTime) throws S7Exception {
 
-        lastError = 0;
         S7.setDateTimeAt(S7_SET_DT, 31, dateTime);
         if (sendPacket(S7_SET_DT)) {
-            length = recvIsoPacket();
-            // the minimum expected
-            if (length > 30) {
-                if (S7.getWordAt(pdu, 27) != 0) {
-                    lastError = S7_FUNCTION_ERROR;
-                }
-            } else {
-                lastError = ISO_INVALID_PDU;
+            int length = recvIsoPacket();
+            if (length < 31) {
+                buildException(ISO_INVALID_PDU);
             }
+
+            if (S7.getWordAt(pdu, 27) != 0) {
+                buildException(S7_FUNCTION_ERROR);
+            }
+            return true;
         }
 
-        return lastError;
+        return false;
     }
 
-    public int setPlcSystemDateTime() {
+    public boolean setPlcSystemDateTime() throws S7Exception {
         return setPlcDateTime(LocalDateTime.now());
     }
 
-    public int setSessionPassword(String password) {
-        byte[] pwd = { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 };
-        int length;
-
-        lastError = 0;
+    public boolean setSessionPassword(String password) throws S7Exception {
         // Adjusts the Password length to 8
         if (password.length() > 8) {
             password = password.substring(0, 8);
@@ -1160,37 +1002,30 @@ public class S7Client implements Client, ReturnCode {
                 password = password + " ";
             }
         }
+        byte[] pwd = password.getBytes(StandardCharsets.UTF_8);
 
-        try {
-            pwd = password.getBytes("UTF-8");
-        } catch (UnsupportedEncodingException ex) {
-            lastError = S7_INVALID_PARAMS;
+        // Encodes the password
+        pwd[0] = (byte) (pwd[0] ^ 0x55);
+        pwd[1] = (byte) (pwd[1] ^ 0x55);
+        for (int c = 2; c < 8; c++) {
+            pwd[c] = (byte) (pwd[c] ^ 0x55 ^ pwd[c - 2]);
         }
-        if (lastError == 0) {
-            // Encodes the password
-            pwd[0] = (byte) (pwd[0] ^ 0x55);
-            pwd[1] = (byte) (pwd[1] ^ 0x55);
-            for (int c = 2; c < 8; c++) {
-                pwd[c] = (byte) (pwd[c] ^ 0x55 ^ pwd[c - 2]);
+        System.arraycopy(pwd, 0, S7_SET_PWD, 29, 8);
+        if (sendPacket(S7_SET_PWD)) {
+            int length = recvIsoPacket();
+            if (length < 33) {
+                buildException(ISO_INVALID_PDU);
             }
-            System.arraycopy(pwd, 0, S7_SET_PWD, 29, 8);
-            if (sendPacket(S7_SET_PWD)) {
-                length = recvIsoPacket();
-                if (length > 32) // the minimum expected
-                {
-                    if (S7.getWordAt(pdu, 27) != 0) {
-                        lastError = S7_FUNCTION_ERROR;
-                    }
-                } else {
-                    lastError = ISO_INVALID_PDU;
-                }
+
+            if (S7.getWordAt(pdu, 27) != 0) {
+                buildException(S7_FUNCTION_ERROR);
             }
+            return true;
         }
-        return lastError;
+        return false;
     }
 
-    private boolean openTcpConnect() {
-        lastError = 0;
+    private boolean openTcpConnect() throws S7Exception {
         try {
             tcpSocket = new Socket();
             tcpSocket.connect(new InetSocketAddress(ipAddress, ISO_TCP), 5000);
@@ -1198,54 +1033,49 @@ public class S7Client implements Client, ReturnCode {
             inStream = new DataInputStream(tcpSocket.getInputStream());
             outStream = new DataOutputStream(tcpSocket.getOutputStream());
         } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            lastError = TCP_CONNECTION_FAILED;
+            buildException(TCP_CONNECTION_FAILED, e);
         }
-        return lastError == 0;
+        return true;
     }
 
-    private int waitForData(int Size, int Timeout) {
+    private boolean waitForData(int size, int timeout) throws S7Exception {
         int cnt = 0;
-        lastError = 0;
-        int SizeAvail;
-        boolean Expired = false;
+        int available;
+        boolean expired = false;
         try {
-            SizeAvail = inStream.available();
-            while ((SizeAvail < Size) && (!Expired) && (lastError == 0)) {
-
+            available = inStream.available();
+            while ((available < size) && (!expired)) {
                 cnt++;
                 try {
                     Thread.sleep(1);
-                } catch (InterruptedException ex) {
-                    lastError = TCP_DATA_RECV_TOUT;
+                } catch (InterruptedException e) {
+                    return false;
                 }
-                SizeAvail = inStream.available();
-                Expired = cnt > Timeout;
+                available = inStream.available();
+                expired = cnt > timeout;
                 // If timeout we clean the buffer
-                if (Expired && (SizeAvail > 0) && (lastError == 0)) {
-                    inStream.read(pdu, 0, SizeAvail);
+                if (expired && (available > 0)) {
+                    inStream.read(pdu, 0, available);
                 }
             }
         } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            lastError = TCP_DATA_RECV_TOUT;
+            buildException(TCP_DATA_RECV_TOUT, e);
         }
-        if (cnt >= Timeout) {
-            lastError = TCP_DATA_RECV_TOUT;
+        if (cnt >= timeout) {
+            buildException(TCP_DATA_RECV_TOUT);
         }
-        return lastError;
+        return true;
     }
 
     @Override
-    public int writeArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer) {
+    public boolean writeArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer)
+            throws S7Exception {
         int address;
         int numElements, maxElements, totElements;
         int dataSize, isoSize, length;
         int offset = 0;
         int _start = start;
         int _amount = amount;
-
-        lastError = 0;
 
         DataType _type;
         switch (area) {
@@ -1263,7 +1093,7 @@ public class S7Client implements Client, ReturnCode {
         // Calc Word size
         int wordSize = DataType.getByteLength(_type);
         if (wordSize == 0) {
-            return ERR_CLI_INVALID_WORD_LEN;
+            buildException(ERR_CLI_INVALID_WORD_LEN);
         }
 
         if (_type == DataType.S7WLBit) {
@@ -1278,7 +1108,7 @@ public class S7Client implements Client, ReturnCode {
 
         maxElements = (pduLength - 35) / wordSize; // 35 = Reply telegram header
         totElements = _amount;
-        while ((totElements > 0) && (lastError == 0)) {
+        while (totElements > 0) {
             numElements = totElements;
             if (numElements > maxElements) {
                 numElements = maxElements;
@@ -1343,137 +1173,49 @@ public class S7Client implements Client, ReturnCode {
 
             if (sendPacket(pdu, isoSize)) {
                 length = recvIsoPacket();
-                if (lastError == 0) {
-                    if (length == 22) {
-                        if (pdu[21] != (byte) 0xff) {
-                            lastError = ReturnCode.getCpuError(pdu[21]);
-                        }
-                    } else {
-                        lastError = ERR_ISO_INVALID_PDU;
-                    }
+                if (length != 22) {
+                    buildException(ERR_ISO_INVALID_PDU);
                 }
+
+                if (pdu[21] != (byte) 0xff) {
+                    buildException(ReturnCode.getCpuError(pdu[21]));
+                }
+
             }
             offset += dataSize;
             totElements -= numElements;
             _start += numElements * wordSize;
         }
-        return lastError;
+        return true;
     }
 
-    @Deprecated
-    public int writeArea(AreaType area, int db, int start, int amount, byte[] data) {
-        int address;
-        int numElements;
-        int maxElements;
-        int totElements;
-        int dataSize;
-        int isoSize;
-        int length;
-        int offset = 0;
-        int wordSize = 1;
-
-        lastError = 0;
-
-        // If we are addressing Timers or counters the element size is 2
-        if ((area == AreaType.S7AreaCT) || (area == AreaType.S7AreaTM)) {
-            wordSize = 2;
-        }
-
-        maxElements = (pduLength - 35) / wordSize; // 18 = Reply telegram header
-        totElements = amount;
-
-        while ((totElements > 0) && (lastError == 0)) {
-            numElements = totElements;
-            if (numElements > maxElements) {
-                numElements = maxElements;
-            }
-
-            dataSize = numElements * wordSize;
-            isoSize = SIZE_WR + dataSize;
-
-            // setup the telegram
-            System.arraycopy(S7_RW, 0, pdu, 0, SIZE_WR);
-            // Whole telegram Size
-            S7.setWordAt(pdu, 2, isoSize);
-            // Data length
-            length = dataSize + 4;
-            S7.setWordAt(pdu, 15, length);
-            // Function
-            pdu[17] = (byte) 0x05;
-            // set DB Number
-            pdu[27] = area.getValue();
-            if (area == AreaType.S7AreaDB) {
-                S7.setWordAt(pdu, 25, db);
-            }
-
-            // Adjusts start and word length
-            if ((area == AreaType.S7AreaCT) || (area == AreaType.S7AreaTM)) {
-                address = start;
-                length = dataSize;
-                if (area == AreaType.S7AreaCT) {
-                    pdu[22] = DataType.S7WLCounter.getValue();
-                } else {
-                    pdu[22] = DataType.S7WLTimer.getValue();
-                }
-            } else {
-                address = start << 3;
-                length = dataSize << 3;
-            }
-            // Num elements
-            S7.setWordAt(pdu, 23, numElements);
-            // address into the PLC
-            pdu[30] = (byte) (address & 0xff);
-            address = address >> 8;
-            pdu[29] = (byte) (address & 0xff);
-            address = address >> 8;
-            pdu[28] = (byte) (address & 0xff);
-            // length
-            S7.setWordAt(pdu, 33, length);
-
-            // Copies the Data
-            System.arraycopy(data, offset, pdu, 35, dataSize);
-
-            if (sendPacket(pdu, isoSize)) {
-                length = recvIsoPacket();
-                if (lastError == 0) {
-                    if (length == 22) {
-                        if ((S7.getWordAt(pdu, 17) != 0) || (pdu[21] != (byte) 0xff)) {
-                            lastError = S7_DATA_WRITE;
-                        }
-                    } else {
-                        lastError = ISO_INVALID_PDU;
-                    }
-                }
-            }
-
-            offset += dataSize;
-            totElements -= numElements;
-            start += numElements * wordSize;
-        }
-        return lastError;
-    }
-
-    public int getIsoExchangeBuffer(byte[] buffer) {
+    public int getIsoExchangeBuffer(byte[] buffer) throws S7Exception {
         int size = 0;
-        lastError = 0;
         System.arraycopy(TPKT_ISO, 0, pdu, 0, TPKT_ISO.length);
         S7.setWordAt(pdu, 2, (size + TPKT_ISO.length));
         try {
             System.arraycopy(buffer, 0, pdu, TPKT_ISO.length, size);
         } catch (Exception e) {
-            return ERR_ISO_INVALID_PDU;
+            buildException(ERR_ISO_INVALID_PDU, e);
         }
         if (sendPacket(pdu, TPKT_ISO.length + size)) {
             int length = recvIsoPacket();
-            if (lastError == 0) {
-                System.arraycopy(pdu, TPKT_ISO.length, buffer, 0, length - TPKT_ISO.length);
-                size = length - TPKT_ISO.length;
+            if (length < 1) {
+                buildException(ISO_INVALID_PDU);
             }
+
+            System.arraycopy(pdu, TPKT_ISO.length, buffer, 0, length - TPKT_ISO.length);
+            size = length - TPKT_ISO.length;
         }
-        return lastError == 0 ? size : 0;
+        return size;
     }
 
-    public int getLastError() {
-        return lastError;
+    private void buildException(int code) throws S7Exception {
+        throw new S7Exception(code, ReturnCode.getErrorText(code));
     }
+
+    private void buildException(int code, Throwable e) throws S7Exception {
+        throw new S7Exception(code, ReturnCode.getErrorText(code), e);
+    }
+
 }

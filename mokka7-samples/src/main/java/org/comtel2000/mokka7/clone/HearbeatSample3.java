@@ -14,26 +14,20 @@ public class HearbeatSample3 extends ClientRunner {
 
     @Override
     public void call(S7Client client) throws Exception {
-        int result;
         boolean plcBit, clientBit;
         for (int i = 0; i < 1000; i++) {
-            result = client.readArea(AreaType.S7AreaDB, 200, 34, 1, DataType.S7WLByte, buffer);
+            client.readArea(AreaType.S7AreaDB, 200, 34, 1, DataType.S7WLByte, buffer);
             plcBit = S7.getBitAt(buffer, 0, 0);
             clientBit = S7.getBitAt(buffer, 0, 1);
-
             if (plcBit != clientBit) {
                 System.err.println("update: " + plcBit + "/" + clientBit);
                 S7.setBitAt(buffer, 0, 1, plcBit);
-                result = client.writeArea(AreaType.S7AreaDB, 200, 34, 1, DataType.S7WLByte, buffer);
-
-                checkResult(result);
+                client.writeArea(AreaType.S7AreaDB, 200, 34, 1, DataType.S7WLByte, buffer);
             }
-
-
             Thread.sleep(500);
         }
 
-        // result = client.WriteArea(S7.S7AreaDB, 200, 34, 1, new
+        // client.WriteArea(S7.S7AreaDB, 200, 34, 1, new
         // byte[]{0x00});
     }
 

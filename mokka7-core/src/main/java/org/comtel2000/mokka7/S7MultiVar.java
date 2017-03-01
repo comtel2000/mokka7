@@ -19,6 +19,8 @@ package org.comtel2000.mokka7;
 
 import java.util.Arrays;
 
+import org.comtel2000.mokka7.exception.S7Exception;
+
 public class S7MultiVar implements ReturnCode, AutoCloseable {
 
     private S7Client client;
@@ -104,16 +106,16 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
         return true;
     }
 
-    public int read() {
+    public boolean read() throws S7Exception {
         if (count < 1) {
-            return ERR_CLI_FUNCTION_REFUSED;
+            throw new S7Exception(ERR_CLI_FUNCTION_REFUSED, ReturnCode.getErrorText(ERR_CLI_FUNCTION_REFUSED));
         }
         return client.readMultiVars(items, count);
     }
 
-    public int write() {
+    public boolean write() throws S7Exception {
         if (count < 1) {
-            return ERR_CLI_FUNCTION_REFUSED;
+            throw new S7Exception(ERR_CLI_FUNCTION_REFUSED, ReturnCode.getErrorText(ERR_CLI_FUNCTION_REFUSED));
         }
         return client.writeMultiVars(items, count);
     }
