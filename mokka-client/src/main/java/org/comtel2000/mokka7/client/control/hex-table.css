@@ -1,4 +1,10 @@
 .table-view {
     -fx-font-family: "Monospaced";
     -fx-font-weight: bold;
+    -fx-pref-width: 600;
+    -fx-pref-height: 400;
+}
+
+.table-view .table-row-cell {
+    -fx-cell-size: 20;
 }

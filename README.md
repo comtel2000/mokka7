@@ -2,7 +2,8 @@
 [![Build status](https://travis-ci.org/comtel2000/mokka7.svg?branch=master)](https://travis-ci.org/comtel2000/mokka7)
 
 ## About
-Mokka7 is native port of Snap7 core in pure Java (fork of moka7 http://snap7.sourceforge.net/) and parts of Sharp7.
+Mokka7/Snap7 is an open source, 32/64 bit, multi-platform Ethernet communication suite for interfacing natively with Siemens S7 PLCs. The new CPUs 1200/1500, the old S7200, the small LOGO 0BA7/0BA8 and SINAMICS Drives are also partially supported.
+Mokka7 is native port of Snap7 core written in pure Java (fork of moka7 http://snap7.sourceforge.net/) and parts of Sharp7.
 
 Moka7 features:
 * Native port of Snap7 core in pure Java, no DLL
@@ -14,9 +15,13 @@ additional Mokka7 (fork) features (alpha state):
 * MultiVars Read/Write
 * Enhanced API (Java8 required)
 
-## Maven
+## Roadmap
+* Async non blocking read/write
+* MultiVars as collections (automatic slit size)
 
-### Mokka7 core
+## Maven Modules
+
+### Mokka7 core (core lib)
 ```xml
 <dependency>
     <groupId>org.comtel2000</groupId>
@@ -25,7 +30,25 @@ additional Mokka7 (fork) features (alpha state):
 </dependency>
 ```
 
-### Mokka7 samples
+### Mokka7 metrics (metrics support)
+```xml
+<dependency>
+    <groupId>org.comtel2000</groupId>
+    <artifactId>mokka7-metrics</artifactId>
+    <version>[LATEST]</version>
+</dependency>
+```
+
+### Mokka7 client (UI client interface)
+```xml
+<dependency>
+    <groupId>org.comtel2000</groupId>
+    <artifactId>mokka7-client</artifactId>
+    <version>[LATEST]</version>
+</dependency>
+```
+
+### Mokka7 samples (sample read/writes)
 ```xml
 <dependency>
     <groupId>org.comtel2000</groupId>
@@ -38,4 +61,4 @@ additional Mokka7 (fork) features (alpha state):
 Eclipse Public License - v 1.0
 
 # Special thanks to
-* Dave Nardella [Snap7, Moka7, Sharp7](http://snap7.sourceforge.net)
+* Dave Nardella for initial API and implementation [Snap7, Moka7, Sharp7](http://snap7.sourceforge.net)

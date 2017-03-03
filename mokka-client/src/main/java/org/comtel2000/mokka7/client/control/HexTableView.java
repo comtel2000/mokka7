@@ -17,11 +17,13 @@
 package org.comtel2000.mokka7.client.control;
 
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.ObservableListBase;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
@@ -58,7 +60,7 @@ public class HexTableView extends TableView<Integer> {
 
     public void setData(byte[] data) {
         this.data = Objects.requireNonNull(data);
-        initItems(Math.floorDiv(data.length, 16) + 1);
+        Platform.runLater(() -> initItems(Math.floorDiv(data.length, 16) + 1));
     }
 
     public byte[] getData() {
@@ -82,25 +84,7 @@ public class HexTableView extends TableView<Integer> {
 
 
     private void initItems(int size) {
-        setItems(new ObservableListBase<Integer>() {
-            Integer value = Integer.valueOf(-1);
-
-            @Override
-            public int size() {
-                return size;
-            }
-
-            @Override
-            public Integer get(int index) {
-                if (index < 0 || index >= size()) {
-                    throw new IndexOutOfBoundsException();
-                }
-                if (index != value.intValue()) {
-                    value = Integer.valueOf(index);
-                }
-                return value;
-            }
-        });
+        getItems().setAll(IntStream.range(0, size).boxed().collect(Collectors.toList()));
     }
 
     private String createItem(int value) {

@@ -363,7 +363,7 @@ public class S7Client implements Client, ReturnCode {
             if (sizeToRead > buffer.length) {
                 buildException(S7_BUFFER_TOO_SMALL);
             }
-            if (readArea(AreaType.DB, db, 0, sizeToRead, DataType.BYTE, buffer)) {
+            if (readArea(AreaType.DB, db, 0, sizeToRead, DataType.BYTE, buffer) > 0) {
                 return sizeToRead;
             }
             buildException(S7_FUNCTION_ERROR);
@@ -785,7 +785,7 @@ public class S7Client implements Client, ReturnCode {
     }
 
     @Override
-    public boolean readArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer) throws S7Exception {
+    public int readArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer) throws S7Exception {
         int address;
         int numElements, maxElements, totElements;
         int sizeRequested;
@@ -875,7 +875,7 @@ public class S7Client implements Client, ReturnCode {
             totElements -= numElements;
             _start += numElements * wordSize;
         }
-        return true;
+        return offset;
     }
 
     @Override

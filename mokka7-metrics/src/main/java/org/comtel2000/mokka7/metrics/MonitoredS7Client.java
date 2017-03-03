@@ -1,20 +1,20 @@
 /*
  * PROJECT Mokka7 (fork of Snap7/Moka7)
- * 
+ *
  * Copyright (c) 2017 J.Zimmermann (comtel2000)
- * 
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
- * 
+ *
  * Contributors:
  *    J.Zimmermann    - Mokka7 fork
- * 
+ *
  */
 package org.comtel2000.mokka7.metrics;
 
@@ -100,7 +100,7 @@ public class MonitoredS7Client extends S7Client implements Closeable {
     }
 
     @Override
-    public boolean readArea(AreaType area, int db, int start, int amount, DataType type, byte[] buffer) throws S7Exception {
+    public int readArea(AreaType area, int db, int start, int amount, DataType type, byte[] buffer) throws S7Exception {
         final Timer.Context context = reads.time();
         try {
             return super.readArea(area, db, start, amount, type, buffer);

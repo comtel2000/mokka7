@@ -127,7 +127,7 @@ public class ClientDemo {
         testBegin("ReadArea()");
         boolean suc = false;
         try {
-            suc = client.readArea(AreaType.DB, dbSample, 0, dataToMove, DataType.BYTE, buffer);
+            suc = client.readArea(AreaType.DB, dbSample, 0, dataToMove, DataType.BYTE, buffer) > 0;
             System.out.println("DB " + dbSample + " succesfully read using size reported by DBGet()");
         } catch (S7Exception e) {
             error(e.getErrorCode());

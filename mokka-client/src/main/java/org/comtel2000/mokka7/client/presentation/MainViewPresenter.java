@@ -3,17 +3,15 @@
  *
  * Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
  *
- * Contributors:
- *    J.Zimmermann    - Mokka7 fork
+ * Contributors: J.Zimmermann - Mokka7 fork
  *
  */
 package org.comtel2000.mokka7.client.presentation;
@@ -23,8 +21,8 @@ import java.util.ResourceBundle;
 
 import javax.inject.Inject;
 
-import org.comtel2000.mokka7.client.control.HexTableView;
 import org.comtel2000.mokka7.client.presentation.connect.ConnectView;
+import org.comtel2000.mokka7.client.presentation.read.ReadView;
 import org.comtel2000.mokka7.client.service.SessionManager;
 import org.comtel2000.mokka7.metrics.MonitoredS7Client;
 import org.slf4j.LoggerFactory;
@@ -74,10 +72,7 @@ public class MainViewPresenter implements Initializable {
         ConnectView connect = new ConnectView();
         mainPane.setTop(connect.getView());
 
-        HexTableView table = new HexTableView();
-        table.titleProperty().set("HEX");
-        bindings.hexDataProperty().addListener((l, a, data)-> table.setData(data));
-        mainPane.setCenter(table);
+        mainPane.setCenter(tabPane);
         loadTabs();
 
         logger.debug("session id: {} ", session.getSessionName());
@@ -85,9 +80,10 @@ public class MainViewPresenter implements Initializable {
 
 
     private void loadTabs() {
+        tabPane.getTabs().add(buildTab("READ", new ReadView().getView(), false));
 
         // tabPane.getTabs().add(buildTab("CONFIG", new ConfigView().getView(), false));
-        // tabPane.getTabs().add(buildTab("READ", new ReadView().getView(), true));
+
         // tabPane.getTabs().add(buildTab("MULTIREAD", new MultiReadView().getView(), true));
         // tabPane.getTabs().add(buildTab("WRITE", new WriteView().getView(), true));
         // tabPane.getTabs().add(buildTab("GAUGE", new GaugeView().getView(), true));

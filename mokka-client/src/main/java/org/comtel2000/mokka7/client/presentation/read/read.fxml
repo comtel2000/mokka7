@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+
+
+<BorderPane fx:id="pane" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.mokka7.client.presentation.read.ReadViewPresenter">
+   <right>
+      <ScrollPane fitToWidth="true">
+         <BorderPane.margin>
+            <Insets />
+         </BorderPane.margin>
+         <content>
+            <VBox minWidth="100.0" prefWidth="200.0" spacing="5.0">
+               <children>
+                  <Label text="Area" />
+                  <ComboBox fx:id="area" maxWidth="1.7976931348623157E308" promptText="Area" />
+                  <Label text="DB Number">
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                  </Label>
+                  <TextField fx:id="db" maxWidth="1.7976931348623157E308" promptText="DB" />
+                  <Label text="Start">
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                  </Label>
+                  <TextField fx:id="start" maxWidth="1.7976931348623157E308" promptText="Start" />
+                  <Label text="Amount">
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                  </Label>
+                  <TextField fx:id="amount" maxWidth="1.7976931348623157E308" promptText="Amount" />
+                  <Label text="DataType">
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </Label>
+                  <ComboBox fx:id="dataType" maxWidth="1.7976931348623157E308" promptText="DataType" />
+                  <Button fx:id="read" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#read" text="Read">
+                     <VBox.margin>
+                        <Insets top="30.0" />
+                     </VBox.margin>
+                  </Button>
+               </children>
+               <padding>
+                  <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+               </padding>
+            </VBox>
+         </content>
+      </ScrollPane>
+   </right>
+</BorderPane>
