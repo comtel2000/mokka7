@@ -18,32 +18,35 @@
  *    J.Zimmermann    - Mokka7 fork
  * 
  */
-package org.comtel2000.mokka7;
+package org.comtel2000.mokka7.block;
 
 /**
- * Siemens S7 Communication Services
  *
  * @author comtel
  *
  */
-public enum ConnectionType {
+public enum PlcCpuStatus {
 
-    /** Used for program loading, diagnostics */
-    PG(0x01),
+    UNKNOWN(0x00), STOP(0x04), RUN(0x08);
 
-    /** Used for operator control and monitoring */
-    OP(0x02),
+    private final byte value;
 
-    /** S7 Standard Communication */
-    S7_BASIC(0x03);
-
-    private final int value;
-
-    ConnectionType(int value) {
-        this.value = value;
+    PlcCpuStatus(int value) {
+        this.value = (byte) value;
     }
 
-    public int getValue() {
+    public byte getValue() {
         return value;
+    }
+
+    public static PlcCpuStatus valueOf(byte b) {
+        // Since RUN status is always 0x08 for all CPUs and CPs, STOP status
+        // sometime can be coded as 0x03 (especially for old cpu...)
+        for (PlcCpuStatus s : values()) {
+            if (s.value == b) {
+                return s;
+            }
+        }
+        return RUN;
     }
 }

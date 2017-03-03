@@ -18,9 +18,11 @@
  *    J.Zimmermann    - Mokka7 fork
  * 
  */
-package org.comtel2000.mokka7;
+package org.comtel2000.mokka7.block;
 
 import java.time.Duration;
+
+import org.comtel2000.mokka7.util.S7;
 
 public class S7Timer {
 

@@ -18,6 +18,10 @@
  */
 package org.comtel2000.mokka7;
 
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.DataType;
+import org.comtel2000.mokka7.util.S7;
+
 public class ReadByteSample extends ClientRunner {
 
     final int db = 201;
@@ -29,23 +33,23 @@ public class ReadByteSample extends ClientRunner {
     @Override
     public void call(S7Client client) throws Exception {
 
-        client.readArea(AreaType.S7AreaDB, db, 0, 1, DataType.S7WLByte, buffer);
+        client.readArea(AreaType.DB, db, 0, 1, DataType.BYTE, buffer);
         bitSet(buffer[0]);
         S7.hexDump(buffer, 2, System.out::println);
 
-        byte b = client.readByte(AreaType.S7AreaDB, db, 0);
+        byte b = client.readByte(AreaType.DB, db, 0);
         bitSet(b);
         S7.hexDump(buffer, 2, System.out::println);
 
-        client.readArea(AreaType.S7AreaDB, db, 1, 1, DataType.S7WLByte, buffer);
+        client.readArea(AreaType.DB, db, 1, 1, DataType.BYTE, buffer);
         bitSet(buffer[0]);
         S7.hexDump(buffer, 2, System.out::println);
 
-        b = client.readByte(AreaType.S7AreaDB, db, 1);
+        b = client.readByte(AreaType.DB, db, 1);
         bitSet(b);
         S7.hexDump(buffer, 2, System.out::println);
 
-        byte[] bytes = client.readBytes(AreaType.S7AreaDB, 200, 0, 64);
+        byte[] bytes = client.readBytes(AreaType.DB, 200, 0, 64);
         S7.hexDump(bytes, System.out::println);
     }
 

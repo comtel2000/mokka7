@@ -18,6 +18,9 @@
  */
 package org.comtel2000.mokka7;
 
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.DataType;
+import org.comtel2000.mokka7.util.S7;
 import org.junit.Assert;
 
 
@@ -32,20 +35,20 @@ public class ReadMultiVarsSample extends ClientRunner {
     @Override
     public void call(S7Client client) throws Exception {
 
-        byte b0 = client.readByte(AreaType.S7AreaDB, db, 0);
+        byte b0 = client.readByte(AreaType.DB, db, 0);
         bitSet(b0);
-        byte b1 = client.readByte(AreaType.S7AreaDB, db, 1);
+        byte b1 = client.readByte(AreaType.DB, db, 1);
         bitSet(b1);
-        byte b2 = client.readByte(AreaType.S7AreaDB, db, 2);
+        byte b2 = client.readByte(AreaType.DB, db, 2);
         bitSet(b2);
-        byte b3 = client.readByte(AreaType.S7AreaDB, db, 3);
+        byte b3 = client.readByte(AreaType.DB, db, 3);
         bitSet(b3);
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.S7AreaDB, db, 0, 1, DataType.S7WLByte);
-            mv.add(AreaType.S7AreaDB, db, 1, 1, DataType.S7WLByte);
-            mv.add(AreaType.S7AreaDB, db, 2, 1, DataType.S7WLByte);
-            mv.add(AreaType.S7AreaDB, db, 3, 1, DataType.S7WLByte);
+            mv.add(AreaType.DB, db, 0, 1, DataType.BYTE);
+            mv.add(AreaType.DB, db, 1, 1, DataType.BYTE);
+            mv.add(AreaType.DB, db, 2, 1, DataType.BYTE);
+            mv.add(AreaType.DB, db, 3, 1, DataType.BYTE);
 
             mv.read();
 
@@ -61,8 +64,8 @@ public class ReadMultiVarsSample extends ClientRunner {
         }
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.S7AreaDB, db, 0, 1, DataType.S7WLWord);
-            mv.add(AreaType.S7AreaDB, db, 2, 1, DataType.S7WLWord);
+            mv.add(AreaType.DB, db, 0, 1, DataType.WORD);
+            mv.add(AreaType.DB, db, 2, 1, DataType.WORD);
             mv.read();
 
             checkResult(mv.getResult(0).result);
@@ -76,7 +79,7 @@ public class ReadMultiVarsSample extends ClientRunner {
         }
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.S7AreaDB, db, 0, 2, DataType.S7WLWord);
+            mv.add(AreaType.DB, db, 0, 2, DataType.WORD);
             mv.read();
 
             checkResult(mv.getResult(0).result);
@@ -88,8 +91,8 @@ public class ReadMultiVarsSample extends ClientRunner {
         }
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.S7AreaDB, db, 0, 1, DataType.S7WLDWord);
-            mv.add(AreaType.S7AreaDB, db, 4, 1, DataType.S7WLDWord);
+            mv.add(AreaType.DB, db, 0, 1, DataType.DWORD);
+            mv.add(AreaType.DB, db, 4, 1, DataType.DWORD);
             mv.read();
 
             checkResult(mv.getResult(0).result);

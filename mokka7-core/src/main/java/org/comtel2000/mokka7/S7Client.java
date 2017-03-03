@@ -1,21 +1,17 @@
 /*
  * PROJECT Mokka7 (fork of Snap7/Moka7)
  *
- * Copyright (c) 2013,2016 Davide Nardella
- * Copyright (c) 2017 J.Zimmermann (comtel2000)
+ * Copyright (c) 2013,2016 Davide Nardella Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
  *
- * Contributors:
- *    Davide Nardella - initial API and implementation
- *    J.Zimmermann    - Mokka7 fork
+ * Contributors: Davide Nardella - initial API and implementation J.Zimmermann - Mokka7 fork
  *
  */
 package org.comtel2000.mokka7;
@@ -23,7 +19,6 @@ package org.comtel2000.mokka7;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -32,7 +27,21 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.comtel2000.mokka7.block.BlockType;
+import org.comtel2000.mokka7.block.PlcCpuStatus;
+import org.comtel2000.mokka7.block.S7BlockInfo;
+import org.comtel2000.mokka7.block.S7CpInfo;
+import org.comtel2000.mokka7.block.S7CpuInfo;
+import org.comtel2000.mokka7.block.S7DataItem;
+import org.comtel2000.mokka7.block.S7OrderCode;
+import org.comtel2000.mokka7.block.S7Protection;
+import org.comtel2000.mokka7.block.S7Szl;
 import org.comtel2000.mokka7.exception.S7Exception;
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.ConnectionType;
+import org.comtel2000.mokka7.type.DataType;
+import org.comtel2000.mokka7.util.ReturnCode;
+import org.comtel2000.mokka7.util.S7;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,7 +178,7 @@ public class S7Client implements Client, ReturnCode {
             (byte) 0x12, // Var spec.
             (byte) 0x0a, // length of remaining bytes
             (byte) 0x10, // Syntax ID
-            DataType.S7WLByte.getValue(), // Transport Size
+            DataType.BYTE.getValue(), // Transport Size
             (byte) 0x00, (byte) 0x00, // Num Elements
             (byte) 0x00, (byte) 0x00, // DB Number (if any, else 0)
             (byte) 0x84, // area Type
@@ -238,7 +247,7 @@ public class S7Client implements Client, ReturnCode {
     private static final byte[] S7_MRD_ITEM = { 0x12, // Var spec.
             0x0a, // length of remaining bytes
             0x10, // Syntax ID
-            DataType.S7WLByte.getValue(), // Transport Size idx=3
+            DataType.BYTE.getValue(), // Transport Size idx=3
             0x00, 0x00, // Num Elements
             0x00, 0x00, // DB Number (if any, else 0)
             (byte) 0x84, // area Type
@@ -262,7 +271,7 @@ public class S7Client implements Client, ReturnCode {
     private static final byte[] S7_MWR_PARAM = { 0x12, // Var spec.
             0x0a, // length of remaining bytes
             0x10, // Syntax ID
-            DataType.S7WLByte.getValue(), // Transport Size idx=3
+            DataType.BYTE.getValue(), // Transport Size idx=3
             0x00, 0x00, // Num Elements
             0x00, 0x00, // DB Number (if any, else 0)
             (byte) 0x84, // area Type
@@ -276,7 +285,7 @@ public class S7Client implements Client, ReturnCode {
     private ConnectionType connType = ConnectionType.PG;
 
     private Socket tcpSocket;
-    private InputStream inStream = null;
+    private BufferedInputStream inStream = null;
     private OutputStream outStream = null;
 
     private String ipAddress;
@@ -339,10 +348,14 @@ public class S7Client implements Client, ReturnCode {
         return connect();
     }
 
+    @Override
+    public boolean isConnected() {
+        return connected;
+    }
 
     @Override
     public int dbGet(int db, byte[] buffer) throws S7Exception {
-        S7BlockInfo block = getAgBlockInfo(S7.BLOCK_DB, db);
+        S7BlockInfo block = getAgBlockInfo(BlockType.DB, db);
         // Query the DB length
         if (block != null) {
             int sizeToRead = block.mc7Size;
@@ -350,7 +363,7 @@ public class S7Client implements Client, ReturnCode {
             if (sizeToRead > buffer.length) {
                 buildException(S7_BUFFER_TOO_SMALL);
             }
-            if (readArea(AreaType.S7AreaDB, db, 0, sizeToRead, DataType.S7WLByte, buffer)) {
+            if (readArea(AreaType.DB, db, 0, sizeToRead, DataType.BYTE, buffer)) {
                 return sizeToRead;
             }
             buildException(S7_FUNCTION_ERROR);
@@ -383,9 +396,9 @@ public class S7Client implements Client, ReturnCode {
     }
 
     @Override
-    public S7BlockInfo getAgBlockInfo(int blockType, int blockNumber) throws S7Exception {
+    public S7BlockInfo getAgBlockInfo(BlockType blockType, int blockNumber) throws S7Exception {
         // Block Type
-        S7_BI[30] = (byte) blockType;
+        S7_BI[30] = blockType.getValue();
         // Block Number
         S7_BI[31] = (byte) ((blockNumber / 10000) + 0x30);
         blockNumber = blockNumber % 10000;
@@ -412,7 +425,7 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public S7CpInfo getCpInfo() throws S7Exception {
-        S7Szl szl = readSzl(0x0131, 0x0001, 1024);
+        S7Szl szl = getSzl(0x0131, 0x0001, 1024);
         if (szl != null) {
             return S7CpInfo.of(szl.data, 0);
         }
@@ -422,7 +435,7 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public S7CpuInfo getCpuInfo() throws S7Exception {
-        S7Szl szl = readSzl(0x001C, 0x0000, 1024);
+        S7Szl szl = getSzl(0x001C, 0x0000, 1024);
         if (szl != null) {
             return S7CpuInfo.of(szl.data, 0);
         }
@@ -432,7 +445,7 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public S7OrderCode getOrderCode() throws S7Exception {
-        S7Szl szl = readSzl(0x0011, 0x0000, 1024);
+        S7Szl szl = getSzl(0x0011, 0x0000, 1024);
         if (szl != null) {
             return S7OrderCode.of(szl.data, 0, szl.dataSize);
         }
@@ -472,7 +485,7 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public S7Protection getProtection() throws S7Exception {
-        S7Szl szl = readSzl(0x0232, 0x0004, 256);
+        S7Szl szl = getSzl(0x0232, 0x0004, 256);
         if (szl != null) {
             return S7Protection.of(szl.data);
         }
@@ -595,7 +608,7 @@ public class S7Client implements Client, ReturnCode {
             System.arraycopy(S7_MRD_ITEM, 0, s7Item, 0, s7Item.length);
             s7Item[3] = items[c].type.getValue();
             S7.setWordAt(s7Item, 4, items[c].amount);
-            if (items[c].area == AreaType.S7AreaDB) {
+            if (items[c].area == AreaType.DB) {
                 S7.setWordAt(s7Item, 6, items[c].db);
             }
             s7Item[8] = items[c].area.getValue();
@@ -706,18 +719,18 @@ public class S7Client implements Client, ReturnCode {
         for (int c = 0; c < itemsCount; c++) {
             dataItem[0] = 0x00;
             switch (items[c].type) {
-                case S7WLBit:
+                case BIT:
                     dataItem[1] = TS_RESBIT;
                     break;
-                case S7WLCounter:
-                case S7WLTimer:
+                case COUNTER:
+                case TIMER:
                     dataItem[1] = TS_RESOCTET;
                     break;
                 default:
                     dataItem[1] = TS_RESBYTE; // byte/word/dword etc.
                     break;
             };
-            if ((items[c].type == DataType.S7WLTimer) || (items[c].type == DataType.S7WLCounter)) {
+            if ((items[c].type == DataType.TIMER) || (items[c].type == DataType.COUNTER)) {
                 itemDataSize = items[c].amount * 2;
             } else {
                 itemDataSize = items[c].amount;
@@ -784,11 +797,11 @@ public class S7Client implements Client, ReturnCode {
 
         DataType _type;
         switch (area) {
-            case S7AreaCT:
-                _type = DataType.S7WLCounter;
+            case CT:
+                _type = DataType.COUNTER;
                 break;
-            case S7AreaTM:
-                _type = DataType.S7WLTimer;
+            case TM:
+                _type = DataType.TIMER;
                 break;
             default:
                 _type = type;
@@ -800,13 +813,13 @@ public class S7Client implements Client, ReturnCode {
             buildException(ERR_INVALID_WORD_LEN);
         }
 
-        if (_type == DataType.S7WLBit) {
+        if (_type == DataType.BIT) {
             _amount = 1; // Only 1 bit can be transferred at time
         } else {
-            if ((_type != DataType.S7WLCounter) && (_type != DataType.S7WLTimer)) {
+            if ((_type != DataType.COUNTER) && (_type != DataType.TIMER)) {
                 _amount = _amount * wordSize;
                 wordSize = 1;
-                _type = DataType.S7WLByte;
+                _type = DataType.BYTE;
             }
         }
 
@@ -826,12 +839,12 @@ public class S7Client implements Client, ReturnCode {
             // Set DB Number
             pdu[27] = area.getValue();
             // Set area
-            if (area == AreaType.S7AreaDB) {
+            if (area == AreaType.DB) {
                 S7.setWordAt(pdu, 25, db);
             }
 
             // Adjusts start and word length
-            if ((_type == DataType.S7WLBit) || (_type == DataType.S7WLCounter) || (_type == DataType.S7WLTimer)) {
+            if ((_type == DataType.BIT) || (_type == DataType.COUNTER) || (_type == DataType.TIMER)) {
                 address = _start;
                 pdu[22] = _type.getValue();
             } else {
@@ -866,7 +879,7 @@ public class S7Client implements Client, ReturnCode {
     }
 
     @Override
-    public S7Szl readSzl(int id, int index, int bufferSize) throws S7Exception {
+    public S7Szl getSzl(int id, int index, int bufferSize) throws S7Exception {
         final S7Szl szl = new S7Szl(bufferSize);
         int length;
         int dataSZL;
@@ -953,15 +966,27 @@ public class S7Client implements Client, ReturnCode {
 
     protected int recvPacket(byte[] buffer, int start, int size) throws S7Exception {
         int bytesRead = 0;
-        if (waitForData(size, recvTimeout)) {
-            try {
-                bytesRead = inStream.read(buffer, start, size);
-            } catch (IOException e) {
-                buildException(TCP_DATA_RECV, e);
+        try {
+            int offset = start, timeout = 0;
+            while (timeout < recvTimeout) {
+                bytesRead += inStream.read(buffer, offset, size);
+                if (bytesRead == size) {
+                    return bytesRead;
+                }
+                offset += bytesRead;
+                Thread.sleep(1);
+                timeout++;
             }
             if (bytesRead == 0) {
                 buildException(TCP_CONNECTION_RESET);
             }
+            logger.error("cleanup the buffer: {}", inStream.available());
+            inStream.read(pdu);
+
+        } catch (InterruptedException e) {
+            logger.debug("recv packet interrupted");
+        } catch (IOException e) {
+            buildException(TCP_DATA_RECV, e);
         }
         return bytesRead;
     }
@@ -1059,38 +1084,11 @@ public class S7Client implements Client, ReturnCode {
             tcpSocket = new Socket();
             tcpSocket.connect(new InetSocketAddress(ipAddress, ISO_TCP), 5000);
             tcpSocket.setTcpNoDelay(true);
+            tcpSocket.setSoTimeout(recvTimeout);
             inStream = new BufferedInputStream(tcpSocket.getInputStream());
             outStream = new BufferedOutputStream(tcpSocket.getOutputStream());
         } catch (IOException e) {
             buildException(TCP_CONNECTION_FAILED, e);
-        }
-        return true;
-    }
-
-    private boolean waitForData(int size, int timeout) throws S7Exception {
-        int cnt = 0;
-        try {
-            boolean expired = false;
-            int available = inStream.available();
-            while ((available < size) && (!expired)) {
-                cnt++;
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    return false;
-                }
-                available = inStream.available();
-                expired = cnt > timeout;
-                // If timeout we clean the buffer
-                if (expired && (available > 0)) {
-                    inStream.read(pdu, 0, available);
-                }
-            }
-        } catch (IOException e) {
-            buildException(TCP_DATA_RECV_TOUT, e);
-        }
-        if (cnt >= timeout) {
-            buildException(TCP_DATA_RECV_TOUT);
         }
         return true;
     }
@@ -1107,11 +1105,11 @@ public class S7Client implements Client, ReturnCode {
 
         DataType _type;
         switch (area) {
-            case S7AreaCT:
-                _type = DataType.S7WLCounter;
+            case CT:
+                _type = DataType.COUNTER;
                 break;
-            case S7AreaTM:
-                _type = DataType.S7WLTimer;
+            case TM:
+                _type = DataType.TIMER;
                 break;
             default:
                 _type = type;
@@ -1124,13 +1122,13 @@ public class S7Client implements Client, ReturnCode {
             buildException(ERR_INVALID_WORD_LEN);
         }
 
-        if (_type == DataType.S7WLBit) {
+        if (_type == DataType.BIT) {
             _amount = 1;
         } else {
-            if ((_type != DataType.S7WLCounter) && (_type != DataType.S7WLTimer)) {
+            if ((_type != DataType.COUNTER) && (_type != DataType.TIMER)) {
                 _amount = _amount * wordSize;
                 wordSize = 1;
-                _type = DataType.S7WLByte;
+                _type = DataType.BYTE;
             }
         }
 
@@ -1156,13 +1154,13 @@ public class S7Client implements Client, ReturnCode {
             pdu[17] = (byte) 0x05;
             // set DB Number
             pdu[27] = area.getValue();
-            if (area == AreaType.S7AreaDB) {
+            if (area == AreaType.DB) {
                 S7.setWordAt(pdu, 25, db);
             }
 
 
             // Adjusts start and word length
-            if ((_type == DataType.S7WLBit) || (_type == DataType.S7WLCounter) || (_type == DataType.S7WLTimer)) {
+            if ((_type == DataType.BIT) || (_type == DataType.COUNTER) || (_type == DataType.TIMER)) {
                 address = _start;
                 length = dataSize;
                 pdu[22] = type.getValue();
@@ -1182,11 +1180,11 @@ public class S7Client implements Client, ReturnCode {
 
             // Transport Size
             switch (type) {
-                case S7WLBit:
+                case BIT:
                     pdu[32] = TS_RESBIT;
                     break;
-                case S7WLCounter:
-                case S7WLTimer:
+                case COUNTER:
+                case TIMER:
                     pdu[32] = TS_RESOCTET;
                     break;
                 default:

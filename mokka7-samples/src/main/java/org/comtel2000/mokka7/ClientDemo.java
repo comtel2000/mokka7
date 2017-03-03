@@ -26,7 +26,20 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import org.comtel2000.mokka7.block.BlockType;
+import org.comtel2000.mokka7.block.PlcCpuStatus;
+import org.comtel2000.mokka7.block.S7BlockInfo;
+import org.comtel2000.mokka7.block.S7CpInfo;
+import org.comtel2000.mokka7.block.S7CpuInfo;
+import org.comtel2000.mokka7.block.S7OrderCode;
+import org.comtel2000.mokka7.block.S7Protection;
+import org.comtel2000.mokka7.block.S7Szl;
 import org.comtel2000.mokka7.exception.S7Exception;
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.ConnectionType;
+import org.comtel2000.mokka7.type.DataType;
+import org.comtel2000.mokka7.util.ReturnCode;
+import org.comtel2000.mokka7.util.S7;
 
 
 public class ClientDemo {
@@ -67,11 +80,11 @@ public class ClientDemo {
         System.out.println(ReturnCode.getErrorText(code));
     }
 
-    static void blockInfo(int BlockType, int BlockNumber) {
+    static void blockInfo(BlockType type, int blockNumber) {
         testBegin("GetAgBlockInfo()");
         S7BlockInfo block = null;
         try {
-            block = client.getAgBlockInfo(BlockType, BlockNumber);
+            block = client.getAgBlockInfo(type, blockNumber);
             if (block != null) {
                 System.out.println("Block Flags     : " + Integer.toBinaryString(block.blkFlags));
                 System.out.println("Block Number    : " + block.blkNumber);
@@ -114,7 +127,7 @@ public class ClientDemo {
         testBegin("ReadArea()");
         boolean suc = false;
         try {
-            suc = client.readArea(AreaType.S7AreaDB, dbSample, 0, dataToMove, DataType.S7WLByte, buffer);
+            suc = client.readArea(AreaType.DB, dbSample, 0, dataToMove, DataType.BYTE, buffer);
             System.out.println("DB " + dbSample + " succesfully read using size reported by DBGet()");
         } catch (S7Exception e) {
             error(e.getErrorCode());
@@ -126,7 +139,7 @@ public class ClientDemo {
         testBegin("WriteArea()");
         boolean suc = false;
         try {
-            suc = client.writeArea(AreaType.S7AreaDB, dbSample, 0, dataToMove, DataType.S7WLByte, buffer);
+            suc = client.writeArea(AreaType.DB, dbSample, 0, dataToMove, DataType.BYTE, buffer);
             System.out.println("DB " + dbSample + " succesfully written using size reported by DBGet()");
         } catch (S7Exception e) {
             error(e.getErrorCode());
@@ -286,7 +299,7 @@ public class ClientDemo {
         testBegin("ReadSZL() - ID : 0x0011, IDX : 0x0000");
         S7Szl szl;
         try {
-            szl = client.readSzl(0x0011, 0x0000, 1024);
+            szl = client.getSzl(0x0011, 0x0000, 1024);
         } catch (S7Exception e) {
             error(e.getErrorCode());
             testEnd(false);
@@ -363,7 +376,7 @@ public class ClientDemo {
         if (makeAllTests) {
             runStop();
         }
-        blockInfo(S7.BLOCK_SFC, 1); // get SFC 1 info (always present in a CPU)
+        blockInfo(BlockType.SFC, 1); // get SFC 1 info (always present in a CPU)
         dbPlay();
         summary();
     }

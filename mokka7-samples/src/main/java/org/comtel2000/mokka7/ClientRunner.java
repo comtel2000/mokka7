@@ -21,7 +21,10 @@ package org.comtel2000.mokka7;
 import java.util.BitSet;
 import java.util.concurrent.TimeUnit;
 
+import org.comtel2000.mokka7.block.S7CpInfo;
+import org.comtel2000.mokka7.block.S7OrderCode;
 import org.comtel2000.mokka7.metrics.MonitoredS7Client;
+import org.comtel2000.mokka7.util.ReturnCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

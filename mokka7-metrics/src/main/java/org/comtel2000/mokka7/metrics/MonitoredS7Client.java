@@ -21,11 +21,11 @@ package org.comtel2000.mokka7.metrics;
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
-import org.comtel2000.mokka7.AreaType;
-import org.comtel2000.mokka7.DataType;
 import org.comtel2000.mokka7.S7Client;
-import org.comtel2000.mokka7.S7DataItem;
+import org.comtel2000.mokka7.block.S7DataItem;
 import org.comtel2000.mokka7.exception.S7Exception;
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.DataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -22,7 +22,11 @@ package org.comtel2000.mokka7;
 
 import java.util.Arrays;
 
+import org.comtel2000.mokka7.block.S7DataItem;
 import org.comtel2000.mokka7.exception.S7Exception;
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.DataType;
+import org.comtel2000.mokka7.util.ReturnCode;
 
 /**
  *
@@ -45,15 +49,15 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
         if (wordSize == 0) {
             return null;
         }
-        if (area == AreaType.S7AreaCT) {
-            type = DataType.S7WLCounter;
-        } else if (area == AreaType.S7AreaTM) {
-            type = DataType.S7WLTimer;
+        if (area == AreaType.CT) {
+            type = DataType.COUNTER;
+        } else if (area == AreaType.TM) {
+            type = DataType.TIMER;
         }
 
-        if (type == DataType.S7WLBit) {
+        if (type == DataType.BIT) {
             amount = 1; // Only 1 bit can be transferred at time
-        } else if ((type != DataType.S7WLCounter) && (type != DataType.S7WLTimer)) {
+        } else if ((type != DataType.COUNTER) && (type != DataType.TIMER)) {
             amount = amount * wordSize;
             start = start * 8;
         }

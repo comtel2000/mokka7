@@ -18,36 +18,42 @@
  *    J.Zimmermann    - Mokka7 fork
  * 
  */
-package org.comtel2000.mokka7;
+package org.comtel2000.mokka7.block;
+
+import org.comtel2000.mokka7.util.S7;
 
 /**
+ * See §33.19 of "System Software for S7-300/400 System and Standard Functions"
  *
  * @author Davide
  * @author comtel
+ *
  */
-public class S7CpInfo {
+public class S7Protection {
 
-    public int maxBusRate;
-    public int maxConnections;
-    public int maxMpiRate;
-    public int maxPduLength;
+    public int anl_sch;
+    public int bart_sch;
+    public int sch_par;
+    public int sch_rel;
+    public int sch_schal;
 
-    public static S7CpInfo of(byte[] src, int pos) {
-        S7CpInfo info = new S7CpInfo();
-        info.update(src, pos);
-        return info;
+    public static S7Protection of(byte[] src) {
+        S7Protection pro = new S7Protection();
+        pro.update(src);
+        return pro;
     }
 
-    protected void update(byte[] src, int pos) {
-        maxPduLength = S7.getShortAt(src, 2);
-        maxConnections = S7.getShortAt(src, 4);
-        maxMpiRate = S7.getDIntAt(src, 6);
-        maxBusRate = S7.getDIntAt(src, 10);
+    protected void update(byte[] src) {
+        sch_schal = S7.getWordAt(src, 2);
+        sch_par = S7.getWordAt(src, 4);
+        sch_rel = S7.getWordAt(src, 6);
+        bart_sch = S7.getWordAt(src, 8);
+        anl_sch = S7.getWordAt(src, 10);
     }
 
     @Override
     public String toString() {
-        return "S7CpInfo [maxBusRate=" + maxBusRate + ", maxConnections=" + maxConnections + ", maxMpiRate=" + maxMpiRate + ", maxPduLength=" + maxPduLength
+        return "S7Protection [anl_sch=" + anl_sch + ", bart_sch=" + bart_sch + ", sch_par=" + sch_par + ", sch_rel=" + sch_rel + ", sch_schal=" + sch_schal
                 + "]";
     }
 }

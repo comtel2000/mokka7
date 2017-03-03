@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import org.comtel2000.mokka7.util.S7;
 import org.junit.Assert;
 import org.junit.Test;
 

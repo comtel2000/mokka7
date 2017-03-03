@@ -14,7 +14,7 @@
  * Contributors: Davide Nardella - initial API and implementation J.Zimmermann - Mokka7 fork
  *
  */
-package org.comtel2000.mokka7;
+package org.comtel2000.mokka7.util;
 
 import java.util.ResourceBundle;
 

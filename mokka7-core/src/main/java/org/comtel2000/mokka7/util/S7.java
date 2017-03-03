@@ -18,7 +18,7 @@
  *    J.Zimmermann    - Mokka7 fork
  *
  */
-package org.comtel2000.mokka7;
+package org.comtel2000.mokka7.util;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +29,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.function.Consumer;
 
+import org.comtel2000.mokka7.block.S7Timer;
+
 /**
  * Step 7 Constants and Conversion helper class
  *
@@ -36,33 +38,6 @@ import java.util.function.Consumer;
  * @author comtel
  */
 public class S7 {
-
-    // Block type
-    public static final int BLOCK_OB = 0x38;
-    public static final int BLOCK_DB = 0x41;
-    public static final int BLOCK_SDB = 0x42;
-    public static final int BLOCK_FC = 0x43;
-    public static final int BLOCK_SFC = 0x44;
-    public static final int BLOCK_FB = 0x45;
-    public static final int BLOCK_SFB = 0x46;
-
-    // Block languages
-    public static final int BlockLangAWL = 0x01;
-    public static final int BlockLangKOP = 0x02;
-    public static final int BlockLangFUP = 0x03;
-    public static final int BlockLangSCL = 0x04;
-    public static final int BlockLangDB = 0x05;
-    public static final int BlockLangGRAPH = 0x06;
-
-    // Sub Block Type
-    public static final int SubBlk_OB = 0x08;
-    public static final int SubBlk_DB = 0x0A;
-    public static final int SubBlk_SDB = 0x0B;
-    public static final int SubBlk_FC = 0x0C;
-    public static final int SubBlk_SFC = 0x0D;
-    public static final int SubBlk_FB = 0x0E;
-    public static final int SubBlk_SFB = 0x0F;
-
 
     private static final byte[] BIT_MASK = { (byte) 0x01, (byte) 0x02, (byte) 0x04, (byte) 0x08, (byte) 0x10, (byte) 0x20, (byte) 0x40, (byte) 0x80 };
 

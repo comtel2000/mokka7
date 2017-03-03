@@ -25,14 +25,14 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import org.comtel2000.mokka7.AreaType;
-import org.comtel2000.mokka7.S7CpInfo;
-import org.comtel2000.mokka7.S7OrderCode;
+import org.comtel2000.mokka7.block.S7CpInfo;
+import org.comtel2000.mokka7.block.S7OrderCode;
 import org.comtel2000.mokka7.client.presentation.StatusBinding;
 import org.comtel2000.mokka7.client.service.CompletableService;
 import org.comtel2000.mokka7.client.service.PingWatchdogService;
 import org.comtel2000.mokka7.client.service.SessionManager;
 import org.comtel2000.mokka7.metrics.MonitoredS7Client;
+import org.comtel2000.mokka7.type.AreaType;
 import org.slf4j.LoggerFactory;
 
 import javafx.application.Platform;
@@ -176,7 +176,7 @@ public class ConnectViewPresenter implements Initializable {
             label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
         }
         
-        CompletableService.supply(() -> client.readBytes(AreaType.S7AreaDB, 200, 0, 64)).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(bindings.hexDataProperty()::set).start();
+        CompletableService.supply(() -> client.readBytes(AreaType.DB, 200, 0, 64)).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(bindings.hexDataProperty()::set).start();
     }
 
     private void reset() {

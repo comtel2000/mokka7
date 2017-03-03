@@ -18,25 +18,23 @@
  *    J.Zimmermann    - Mokka7 fork
  * 
  */
-package org.comtel2000.mokka7;
+package org.comtel2000.mokka7.block;
+
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.DataType;
 
 /**
  *
- * @author Davide
  * @author comtel
+ *
  */
-public class S7Szl {
+public class S7DataItem {
 
+    public AreaType area;
+    public DataType type;
+    public int result;
+    public int db;
+    public int start;
+    public int amount;
     public byte[] data;
-    public int dataSize;
-    public int lenthdr;
-    public int n_dr;
-
-    public S7Szl(int bufferSize) {
-        data = new byte[bufferSize];
-    }
-
-    protected void copy(byte[] src, int srcPos, int destPos, int size) {
-        System.arraycopy(src, srcPos, data, destPos, size);
-    }
 }

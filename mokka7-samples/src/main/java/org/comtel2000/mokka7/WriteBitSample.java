@@ -18,6 +18,8 @@
  */
 package org.comtel2000.mokka7;
 
+import org.comtel2000.mokka7.type.AreaType;
+
 /**
  * Simulate a running light (bit pointer)
  *
@@ -37,12 +39,12 @@ public class WriteBitSample extends ClientRunner {
     public void call(S7Client client) throws Exception {
         for (int i = 0; i < 8; i++) {
             int c = i;
-            client.writeBit(AreaType.S7AreaDB, db, start, c, true);
+            client.writeBit(AreaType.DB, db, start, c, true);
             Thread.sleep(200);
         }
         for (int i = 0; i < 8; i++) {
             int c = i;
-            client.writeBit(AreaType.S7AreaDB, db, start, c, false);
+            client.writeBit(AreaType.DB, db, start, c, false);
             Thread.sleep(200);
         }
         int count = 0;
@@ -51,16 +53,16 @@ public class WriteBitSample extends ClientRunner {
             if (inc) {
                 int temp = count;
                 if (count > 0) {
-                    client.writeBit(AreaType.S7AreaDB, db, start, temp - 1, false);
+                    client.writeBit(AreaType.DB, db, start, temp - 1, false);
                 }
-                client.writeBit(AreaType.S7AreaDB, db, start, temp, true);
+                client.writeBit(AreaType.DB, db, start, temp, true);
                 count++;
             } else {
                 int temp = count;
                 if (count < 7) {
-                    client.writeBit(AreaType.S7AreaDB, db, start, temp + 1, false);
+                    client.writeBit(AreaType.DB, db, start, temp + 1, false);
                 }
-                client.writeBit(AreaType.S7AreaDB, db, start, temp, true);
+                client.writeBit(AreaType.DB, db, start, temp, true);
                 count--;
             }
             if (inc && count > 7) {

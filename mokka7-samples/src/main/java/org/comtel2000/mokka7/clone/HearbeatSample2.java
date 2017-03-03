@@ -20,11 +20,11 @@ package org.comtel2000.mokka7.clone;
 
 import java.util.Arrays;
 
-import org.comtel2000.mokka7.AreaType;
 import org.comtel2000.mokka7.ClientRunner;
-import org.comtel2000.mokka7.DataType;
-import org.comtel2000.mokka7.S7;
 import org.comtel2000.mokka7.S7Client;
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.DataType;
+import org.comtel2000.mokka7.util.S7;
 
 /**
  * Clone bit of DB200.DBX34.0 to DB200.DBX34.1
@@ -43,15 +43,15 @@ public class HearbeatSample2 extends ClientRunner {
         boolean snycFailed = false;
         Arrays.fill(buffer, (byte) 0);
         for (int i = 0; i < 50; i++) {
-            client.readArea(AreaType.S7AreaDB, 200, 34 * 8 + 0, 1, DataType.S7WLBit, buffer);
+            client.readArea(AreaType.DB, 200, 34 * 8 + 0, 1, DataType.BIT, buffer);
             boolean plcBit = S7.getBitAt(buffer, 0, 0);
             System.out.println("heartbeat: " + plcBit);
             if (snycFailed) {
                 System.out.println("write: " + plcBit);
                 S7.setBitAt(buffer, 0, 1, plcBit);
-                client.writeArea(AreaType.S7AreaDB, 200, 34 * 8 + 1, 1, DataType.S7WLBit, buffer);
+                client.writeArea(AreaType.DB, 200, 34 * 8 + 1, 1, DataType.BIT, buffer);
             }
-            client.readArea(AreaType.S7AreaDB, 200, 34, 1, DataType.S7WLByte, buffer);
+            client.readArea(AreaType.DB, 200, 34, 1, DataType.BYTE, buffer);
             boolean plmBit = S7.getBitAt(buffer, 0, 1);
             snycFailed = plcBit != plmBit;
             if (snycFailed) {
