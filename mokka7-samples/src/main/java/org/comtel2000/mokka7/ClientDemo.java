@@ -1,19 +1,20 @@
 /*
- * PROJECT Mokka7 (fork of Moka7)
+ * PROJECT Mokka7 (fork of Snap7/Moka7)
  *
- * Copyright (C) 2013, 2016 Davide Nardella All rights reserved. Copyright (C) 2017 J.Zimmermann All
- * rights reserved.
+ * Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * SNAP7 is free software: you can redistribute it and/or modify it under the terms of the Lesser
- * GNU General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or under EPL Eclipse Public License 1.0.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  *
- * This means that you have to chose in advance which take before you import the library into your
- * project.
- *
- * SNAP7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
+ *
+ * Contributors:
+ *    J.Zimmermann    - Mokka7 fork
+ *
  */
 package org.comtel2000.mokka7;
 
@@ -101,7 +102,7 @@ public class ClientDemo {
             sizeRead = client.dbGet(dbSample, buffer);
             dataToMove = sizeRead; // Stores DB size for next test
             System.out.println("DB " + dbSample + " - Size read " + dataToMove + " bytes");
-            S7.hexDump(buffer, dataToMove);
+            S7.hexDump(buffer, System.out::println);
         } catch (S7Exception e) {
             error(e.getErrorCode());
         }
@@ -295,7 +296,7 @@ public class ClientDemo {
             System.out.println("LENTHDR : " + szl.lenthdr);
             System.out.println("N_DR    : " + szl.n_dr);
             System.out.println("Size    : " + szl.dataSize);
-            S7.hexDump(szl.data, szl.dataSize);
+            S7.hexDump(szl.data, System.out::println);
         }
         testEnd(szl != null);
     }
@@ -362,7 +363,7 @@ public class ClientDemo {
         if (makeAllTests) {
             runStop();
         }
-        blockInfo(S7.Block_SFC, 1); // get SFC 1 info (always present in a CPU)
+        blockInfo(S7.BLOCK_SFC, 1); // get SFC 1 info (always present in a CPU)
         dbPlay();
         summary();
     }

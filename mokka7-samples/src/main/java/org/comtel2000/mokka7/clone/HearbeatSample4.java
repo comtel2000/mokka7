@@ -1,3 +1,21 @@
+/*
+ * PROJECT Mokka7 (fork of Snap7/Moka7)
+ * 
+ * Copyright (c) 2017 J.Zimmermann (comtel2000)
+ * 
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ * 
+ * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
+ * decide to adopt.
+ * 
+ * Contributors:
+ *    J.Zimmermann    - Mokka7 fork
+ * 
+ */
 package org.comtel2000.mokka7.clone;
 
 import org.comtel2000.mokka7.AreaType;
@@ -26,8 +44,9 @@ public class HearbeatSample4 extends ClientRunner {
             clientBit = S7.getBitAt(b, 1);
             if (plcBit != clientBit) {
                 System.out.println("update: " + plcBit + "/" + clientBit);
-                client.writeBit(AreaType.S7AreaDB, 200, 34, 1, plcBit);
-            }else{
+                boolean updateBit = plcBit;
+                client.writeBit(AreaType.S7AreaDB, 200, 34, 1, updateBit);
+            } else {
                 System.out.println("ok: " + plcBit + "/" + clientBit);
             }
 

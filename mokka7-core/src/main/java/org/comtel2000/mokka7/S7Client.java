@@ -1,19 +1,22 @@
 /*
- * PROJECT Mokka7 (fork of Moka7)
+ * PROJECT Mokka7 (fork of Snap7/Moka7)
  *
- * Copyright (C) 2013, 2016 Davide Nardella All rights reserved. Copyright (C) 2017 J.Zimmermann All
- * rights reserved.
+ * Copyright (c) 2013,2016 Davide Nardella
+ * Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * SNAP7 is free software: you can redistribute it and/or modify it under the terms of the Lesser
- * GNU General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or under EPL Eclipse Public License 1.0.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  *
- * This means that you have to chose in advance which take before you import the library into your
- * project.
- *
- * SNAP7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
+ *
+ * Contributors:
+ *    Davide Nardella - initial API and implementation
+ *    J.Zimmermann    - Mokka7 fork
+ *
  */
 package org.comtel2000.mokka7;
 
@@ -42,20 +45,20 @@ public class S7Client implements Client, ReturnCode {
 
     private static final Logger logger = LoggerFactory.getLogger(S7Client.class);
 
-    private static final int DEFAULT_PDU_SIZE_REQUESTED = 480;
-
-    private static final int SIZE_RD = 31;
-    private static final int SIZE_WR = 35;
-
     /** Max number of vars (multiread/write) */
     public static final int MAX_VARS = 20;
 
     /** Result transport size */
-    public static final byte TS_RESBIT = 0x03;
-    public static final byte TS_RESBYTE = 0x04;
-    public static final byte TS_RESINT = 0x05;
-    public static final byte TS_RESREAL = 0x07;
-    public static final byte TS_RESOCTET = 0x09;
+    protected static final byte TS_RESBIT = 0x03;
+    protected static final byte TS_RESBYTE = 0x04;
+    protected static final byte TS_RESINT = 0x05;
+    protected static final byte TS_RESREAL = 0x07;
+    protected static final byte TS_RESOCTET = 0x09;
+
+    private static final int DEFAULT_PDU_SIZE_REQUESTED = 480;
+
+    private static final int SIZE_RD = 31;
+    private static final int SIZE_WR = 35;
 
     /** default ISO tcp port */
     private static final int ISO_TCP = 102;
@@ -292,6 +295,7 @@ public class S7Client implements Client, ReturnCode {
         Arrays.fill(buffer, (byte) 0);
     }
 
+    @Override
     public boolean clearSessionPassword() throws S7Exception {
         if (sendPacket(S7_CLR_PWD)) {
             int length = recvIsoPacket();
@@ -306,6 +310,7 @@ public class S7Client implements Client, ReturnCode {
         return false;
     }
 
+    @Override
     public boolean connect() throws S7Exception {
         logger.debug("try to connect to {}", ipAddress);
 
@@ -327,6 +332,7 @@ public class S7Client implements Client, ReturnCode {
         return connected = true;
     }
 
+    @Override
     public boolean connect(String address, int rack, int slot) throws S7Exception {
         int remoteTSAP = (connType.getValue() << 8) + (rack * 0x20) + slot;
         setConnectionParams(address, 0x0100, remoteTSAP);
@@ -334,8 +340,9 @@ public class S7Client implements Client, ReturnCode {
     }
 
 
+    @Override
     public int dbGet(int db, byte[] buffer) throws S7Exception {
-        S7BlockInfo block = getAgBlockInfo(S7.Block_DB, db);
+        S7BlockInfo block = getAgBlockInfo(S7.BLOCK_DB, db);
         // Query the DB length
         if (block != null) {
             int sizeToRead = block.mc7Size;
@@ -351,6 +358,7 @@ public class S7Client implements Client, ReturnCode {
         return -1;
     }
 
+    @Override
     public void disconnect() {
         if (inStream != null) {
             try {
@@ -374,6 +382,7 @@ public class S7Client implements Client, ReturnCode {
         pduLength = 0;
     }
 
+    @Override
     public S7BlockInfo getAgBlockInfo(int blockType, int blockNumber) throws S7Exception {
         // Block Type
         S7_BI[30] = (byte) blockType;
@@ -401,6 +410,7 @@ public class S7Client implements Client, ReturnCode {
         return null;
     }
 
+    @Override
     public S7CpInfo getCpInfo() throws S7Exception {
         S7Szl szl = readSzl(0x0131, 0x0001, 1024);
         if (szl != null) {
@@ -410,6 +420,7 @@ public class S7Client implements Client, ReturnCode {
         return null;
     }
 
+    @Override
     public S7CpuInfo getCpuInfo() throws S7Exception {
         S7Szl szl = readSzl(0x001C, 0x0000, 1024);
         if (szl != null) {
@@ -419,6 +430,7 @@ public class S7Client implements Client, ReturnCode {
         return null;
     }
 
+    @Override
     public S7OrderCode getOrderCode() throws S7Exception {
         S7Szl szl = readSzl(0x0011, 0x0000, 1024);
         if (szl != null) {
@@ -428,6 +440,7 @@ public class S7Client implements Client, ReturnCode {
         return null;
     }
 
+    @Override
     public LocalDateTime getPlcDateTime() throws S7Exception {
         if (sendPacket(S7_GET_DT)) {
             int length = recvIsoPacket();
@@ -435,13 +448,14 @@ public class S7Client implements Client, ReturnCode {
                 buildException(ISO_INVALID_PDU);
             }
             if ((S7.getWordAt(pdu, 27) == 0) && (pdu[29] == (byte) 0xff)) {
-                return S7.getlDateTimeAt(pdu, 34);
+                return S7.getDateTimeAt(pdu, 34);
             }
         }
         buildException(S7_FUNCTION_ERROR);
         return null;
     }
 
+    @Override
     public PlcCpuStatus getPlcStatus() throws S7Exception {
         if (sendPacket(S7_GET_STAT)) {
             int length = recvIsoPacket();
@@ -456,6 +470,7 @@ public class S7Client implements Client, ReturnCode {
         return PlcCpuStatus.UNKNOWN;
     }
 
+    @Override
     public S7Protection getProtection() throws S7Exception {
         S7Szl szl = readSzl(0x0232, 0x0004, 256);
         if (szl != null) {
@@ -508,10 +523,12 @@ public class S7Client implements Client, ReturnCode {
         return false;
     }
 
+    @Override
     public int getPduLength() {
         return pduLength;
     }
 
+    @Override
     public boolean setPlcColdStart() throws S7Exception {
         if (sendPacket(S7_COLD_START)) {
             int length = recvIsoPacket();
@@ -526,6 +543,7 @@ public class S7Client implements Client, ReturnCode {
         return false;
     }
 
+    @Override
     public boolean setPlcHotStart() throws S7Exception {
         if (sendPacket(S7_HOT_START)) {
             int length = recvIsoPacket();
@@ -540,6 +558,7 @@ public class S7Client implements Client, ReturnCode {
         return false;
     }
 
+    @Override
     public boolean setPlcStop() throws S7Exception {
         if (sendPacket(S7_STOP)) {
             int length = recvIsoPacket();
@@ -554,6 +573,7 @@ public class S7Client implements Client, ReturnCode {
         return false;
     }
 
+    @Override
     public boolean readMultiVars(S7DataItem[] items, int itemsCount) throws S7Exception {
         int offset;
         int length;
@@ -563,7 +583,7 @@ public class S7Client implements Client, ReturnCode {
 
         // Checks items
         if (itemsCount > MAX_VARS) {
-            buildException(ERR_CLI_TOO_MANY_ITEMS);
+            buildException(ERR_TOO_MANY_ITEMS);
         }
 
         // Fills Header
@@ -593,7 +613,7 @@ public class S7Client implements Client, ReturnCode {
         }
 
         if (offset > pduLength) {
-            buildException(ERR_CLI_SIZE_OVER_PDU);
+            buildException(ERR_SIZE_OVER_PDU);
         }
 
         S7.setWordAt(pdu, 2, offset); // Whole size
@@ -617,7 +637,7 @@ public class S7Client implements Client, ReturnCode {
         // get true itemsCount
         int itemsRead = S7.getByteAt(pdu, 20);
         if ((itemsRead != itemsCount) || (itemsRead > MAX_VARS)) {
-            buildException(ERR_CLI_INVALID_PLC_ANSWER);
+            buildException(ERR_INVALID_PLC_ANSWER);
         }
         // get Data
         offset = 21;
@@ -645,6 +665,7 @@ public class S7Client implements Client, ReturnCode {
         return true;
     }
 
+    @Override
     public boolean writeMultiVars(S7DataItem[] items, int itemsCount) throws S7Exception {
         int offset;
         int parLength;
@@ -655,7 +676,7 @@ public class S7Client implements Client, ReturnCode {
 
         // Checks items
         if (itemsCount > MAX_VARS) {
-            buildException(ERR_CLI_TOO_MANY_ITEMS);
+            buildException(ERR_TOO_MANY_ITEMS);
         }
         // Fills Header
         System.arraycopy(S7_MWR_HEADER, 0, pdu, 0, S7_MWR_HEADER.length);
@@ -721,7 +742,7 @@ public class S7Client implements Client, ReturnCode {
 
         // Checks the size
         if (offset > pduLength) {
-            buildException(ERR_CLI_SIZE_OVER_PDU);
+            buildException(ERR_SIZE_OVER_PDU);
         }
 
         S7.setWordAt(pdu, 2, offset); // Whole size
@@ -737,7 +758,7 @@ public class S7Client implements Client, ReturnCode {
         // get true itemsCount
         int itemsWritten = S7.getByteAt(pdu, 20);
         if ((itemsWritten != itemsCount) || (itemsWritten > MAX_VARS)) {
-            buildException(ERR_CLI_INVALID_PLC_ANSWER);
+            buildException(ERR_INVALID_PLC_ANSWER);
         }
 
         for (int c = 0; c < itemsCount; c++) {
@@ -776,7 +797,7 @@ public class S7Client implements Client, ReturnCode {
 
         wordSize = DataType.getByteLength(_type);
         if (wordSize == 0) {
-            buildException(ERR_CLI_INVALID_WORD_LEN);
+            buildException(ERR_INVALID_WORD_LEN);
         }
 
         if (_type == DataType.S7WLBit) {
@@ -844,6 +865,7 @@ public class S7Client implements Client, ReturnCode {
         return true;
     }
 
+    @Override
     public S7Szl readSzl(int id, int index, int bufferSize) throws S7Exception {
         final S7Szl szl = new S7Szl(bufferSize);
         int length;
@@ -929,7 +951,7 @@ public class S7Client implements Client, ReturnCode {
         return size;
     }
 
-    private int recvPacket(byte[] buffer, int start, int size) throws S7Exception {
+    protected int recvPacket(byte[] buffer, int start, int size) throws S7Exception {
         int bytesRead = 0;
         if (waitForData(size, recvTimeout)) {
             try {
@@ -948,7 +970,7 @@ public class S7Client implements Client, ReturnCode {
         return sendPacket(buffer, buffer.length);
     }
 
-    private boolean sendPacket(byte[] buffer, int len) throws S7Exception {
+    protected boolean sendPacket(byte[] buffer, int len) throws S7Exception {
         try {
             outStream.write(buffer, 0, len);
             outStream.flush();
@@ -959,6 +981,7 @@ public class S7Client implements Client, ReturnCode {
         return false;
     }
 
+    @Override
     public void setConnectionParams(String address, int localTSAP, int remoteTSAP) {
         int locTSAP = localTSAP & 0x0000FFFF;
         int remTSAP = remoteTSAP & 0x0000FFFF;
@@ -969,10 +992,12 @@ public class S7Client implements Client, ReturnCode {
         remoteTSAP_LO = (byte) (remTSAP & 0x00FF);
     }
 
+    @Override
     public void setConnectionType(ConnectionType type) {
         connType = Objects.requireNonNull(type);
     }
 
+    @Override
     public boolean setPlcDateTime(LocalDateTime dateTime) throws S7Exception {
 
         S7.setDateTimeAt(S7_SET_DT, 31, dateTime);
@@ -991,10 +1016,12 @@ public class S7Client implements Client, ReturnCode {
         return false;
     }
 
+    @Override
     public boolean setPlcSystemDateTime() throws S7Exception {
         return setPlcDateTime(LocalDateTime.now());
     }
 
+    @Override
     public boolean setSessionPassword(String password) throws S7Exception {
         // Adjusts the Password length to 8
         if (password.length() > 8) {
@@ -1094,7 +1121,7 @@ public class S7Client implements Client, ReturnCode {
         // Calc Word size
         int wordSize = DataType.getByteLength(_type);
         if (wordSize == 0) {
-            buildException(ERR_CLI_INVALID_WORD_LEN);
+            buildException(ERR_INVALID_WORD_LEN);
         }
 
         if (_type == DataType.S7WLBit) {
@@ -1190,6 +1217,7 @@ public class S7Client implements Client, ReturnCode {
         return true;
     }
 
+    @Override
     public int getIsoExchangeBuffer(byte[] buffer) throws S7Exception {
         int size = 0;
         System.arraycopy(TPKT_ISO, 0, pdu, 0, TPKT_ISO.length);
@@ -1212,11 +1240,11 @@ public class S7Client implements Client, ReturnCode {
     }
 
     private void buildException(int code) throws S7Exception {
-        throw new S7Exception(code, ReturnCode.getErrorText(code));
+        buildException(code, null);
     }
 
-    private void buildException(int code, Throwable e) throws S7Exception {
-        throw new S7Exception(code, ReturnCode.getErrorText(code), e);
+    protected void buildException(int code, Throwable e) throws S7Exception {
+        throw e == null ? new S7Exception(code, ReturnCode.getErrorText(code)) : new S7Exception(code, ReturnCode.getErrorText(code), e);
     }
 
 }

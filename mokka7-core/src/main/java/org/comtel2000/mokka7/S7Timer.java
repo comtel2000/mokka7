@@ -20,33 +20,33 @@
  */
 package org.comtel2000.mokka7;
 
-/**
- *
- * @author comtel
- *
- */
-public enum PlcCpuStatus {
+import java.time.Duration;
 
-    UNKNOWN(0x00), STOP(0x04), RUN(0x08);
+public class S7Timer {
 
-    private final byte value;
+    public Duration pt;
+    public Duration et;
 
-    PlcCpuStatus(int value) {
-        this.value = (byte) value;
+    public boolean input;
+    public boolean q;
+
+    public S7Timer() {}
+
+    public static S7Timer of(byte[] buffer, int pos) {
+        S7Timer timer = new S7Timer();
+        timer.update(buffer, pos);
+        return timer;
     }
 
-    public byte getValue() {
-        return value;
-    }
-
-    public static PlcCpuStatus valueOf(byte b) {
-        // Since RUN status is always 0x08 for all CPUs and CPs, STOP status
-        // sometime can be coded as 0x03 (especially for old cpu...)
-        for (PlcCpuStatus s : values()) {
-            if (s.value == b) {
-                return s;
-            }
+    public void update(byte[] buffer, int pos) {
+        if (buffer.length < pos + 12) {
+            return;
         }
-        return RUN;
+        this.pt = Duration.ofMillis(S7.getDIntAt(buffer, pos));
+        this.et = Duration.ofMillis(S7.getDIntAt(buffer, pos + 4));
+
+        this.input = S7.getBitAt(buffer[pos + 8], 0x01);
+        this.q = S7.getBitAt(buffer[pos + 8], 0x02);
     }
+
 }

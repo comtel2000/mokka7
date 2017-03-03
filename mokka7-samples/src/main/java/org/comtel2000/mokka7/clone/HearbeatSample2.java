@@ -1,3 +1,21 @@
+/*
+ * PROJECT Mokka7 (fork of Snap7/Moka7)
+ * 
+ * Copyright (c) 2017 J.Zimmermann (comtel2000)
+ * 
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ * 
+ * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
+ * decide to adopt.
+ * 
+ * Contributors:
+ *    J.Zimmermann    - Mokka7 fork
+ * 
+ */
 package org.comtel2000.mokka7.clone;
 
 import java.util.Arrays;
@@ -23,13 +41,13 @@ public class HearbeatSample2 extends ClientRunner {
     @Override
     public void call(S7Client client) throws Exception {
         boolean snycFailed = false;
-        Arrays.fill(buffer, (byte)0);
+        Arrays.fill(buffer, (byte) 0);
         for (int i = 0; i < 50; i++) {
             client.readArea(AreaType.S7AreaDB, 200, 34 * 8 + 0, 1, DataType.S7WLBit, buffer);
             boolean plcBit = S7.getBitAt(buffer, 0, 0);
-            System.err.println("heartbeat: " + plcBit);
+            System.out.println("heartbeat: " + plcBit);
             if (snycFailed) {
-                System.err.println("write: " + plcBit);
+                System.out.println("write: " + plcBit);
                 S7.setBitAt(buffer, 0, 1, plcBit);
                 client.writeArea(AreaType.S7AreaDB, 200, 34 * 8 + 1, 1, DataType.S7WLBit, buffer);
             }
@@ -37,11 +55,12 @@ public class HearbeatSample2 extends ClientRunner {
             boolean plmBit = S7.getBitAt(buffer, 0, 1);
             snycFailed = plcBit != plmBit;
             if (snycFailed) {
-                System.err.println("sync failed: " + plcBit + "/" + plmBit);
+                System.out.println("sync failed: " + plcBit + "/" + plmBit);
             }
             Thread.sleep(500);
         }
     }
+
     public static void main(String[] args) {
         new HearbeatSample2();
     }

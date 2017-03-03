@@ -1,28 +1,27 @@
 /*
- * PROJECT Mokka7 (fork of Moka7)
+ * PROJECT Mokka7 (fork of Snap7/Moka7)
  *
- * Copyright (C) 2013, 2016 Davide Nardella All rights reserved.
- * Copyright (C) 2017 J.Zimmermann All rights reserved.
+ * Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * SNAP7 is free software: you can redistribute it and/or modify it under the terms of the Lesser
- * GNU General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or under EPL Eclipse Public License 1.0.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  *
- * This means that you have to chose in advance which take before you import the library into your
- * project.
- *
- * SNAP7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
+ *
+ * Contributors:
+ *    J.Zimmermann    - Mokka7 fork
+ *
  */
 package org.comtel2000.mokka7;
 
 import java.util.BitSet;
+import java.util.concurrent.TimeUnit;
 
-import org.comtel2000.mokka7.ReturnCode;
-import org.comtel2000.mokka7.S7Client;
-import org.comtel2000.mokka7.S7CpInfo;
-import org.comtel2000.mokka7.S7OrderCode;
+import org.comtel2000.mokka7.metrics.MonitoredS7Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +29,7 @@ public abstract class ClientRunner {
 
     protected static byte[] buffer = new byte[1024];
 
-    private static final Logger logger = LoggerFactory.getLogger(ClientRunner.class);
+    protected static final Logger logger = LoggerFactory.getLogger(ClientRunner.class);
 
     private static final String host = "192.168.100.250";
     private static final int rack = 0;
@@ -41,9 +40,12 @@ public abstract class ClientRunner {
     }
 
     public ClientRunner(String host, int rack, int slot) {
-        S7Client client = new S7Client();
+        MonitoredS7Client client = new MonitoredS7Client();
+        client.start(10, TimeUnit.SECONDS);
+        long time = System.currentTimeMillis();
         try {
             if (client.connect(host, rack, slot)) {
+                logger.info("connected in {}ms", System.currentTimeMillis() - time);
                 S7OrderCode orderCode = client.getOrderCode();
                 if (orderCode != null) {
                     logger.debug("Order Code\t: {}", orderCode.getCode());
@@ -57,12 +59,16 @@ public abstract class ClientRunner {
                     logger.debug("Max MPI (bps)\t: {}", cpInfo.maxMpiRate);
                     logger.debug("Max Bus (bps)\t: {}", cpInfo.maxBusRate);
                 }
+                time = System.currentTimeMillis();
                 call(client);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         } finally {
+            logger.info("finished after {}ms", (System.currentTimeMillis() - time));
+            client.report();
             client.disconnect();
+            client.close();
         }
     }
 

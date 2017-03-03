@@ -1,19 +1,22 @@
 /*
- * PROJECT Mokka7 (fork of Moka7)
+ * PROJECT Mokka7 (fork of Snap7/Moka7)
  *
- * Copyright (C) 2013, 2016 Davide Nardella All rights reserved.
- * Copyright (C) 2017 J.Zimmermann All rights reserved.
+ * Copyright (c) 2013,2016 Davide Nardella
+ * Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * SNAP7 is free software: you can redistribute it and/or modify it under the terms of the Lesser
- * GNU General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or under EPL Eclipse Public License 1.0.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  *
- * This means that you have to chose in advance which take before you import the library into your
- * project.
- *
- * SNAP7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
+ *
+ * Contributors:
+ *    Davide Nardella - initial API and implementation
+ *    J.Zimmermann    - Mokka7 fork
+ *
  */
 package org.comtel2000.mokka7;
 
@@ -60,7 +63,7 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
         item.start = start;
         item.amount = amount;
         item.type = type;
-        item.result = ERR_CLI_ITEM_NOT_AVAILABLE;
+        item.result = ERR_ITEM_NOT_AVAILABLE;
         return item;
     }
 
@@ -91,7 +94,7 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
         return add(item);
     }
 
-    public boolean add(S7DataItem item){
+    public boolean add(S7DataItem item) {
         if (count >= S7Client.MAX_VARS) {
             return false;
         }
@@ -100,7 +103,7 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
         return true;
     }
 
-    public boolean add(S7DataItem[] data){
+    public boolean add(S7DataItem[] data) {
         if (count >= S7Client.MAX_VARS || count + data.length >= S7Client.MAX_VARS) {
             return false;
         }
@@ -113,14 +116,14 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
 
     public boolean read() throws S7Exception {
         if (count < 1) {
-            throw new S7Exception(ERR_CLI_FUNCTION_REFUSED, ReturnCode.getErrorText(ERR_CLI_FUNCTION_REFUSED));
+            throw new S7Exception(ERR_FUNCTION_REFUSED, ReturnCode.getErrorText(ERR_FUNCTION_REFUSED));
         }
         return client.readMultiVars(items, count);
     }
 
     public boolean write() throws S7Exception {
         if (count < 1) {
-            throw new S7Exception(ERR_CLI_FUNCTION_REFUSED, ReturnCode.getErrorText(ERR_CLI_FUNCTION_REFUSED));
+            throw new S7Exception(ERR_FUNCTION_REFUSED, ReturnCode.getErrorText(ERR_FUNCTION_REFUSED));
         }
         return client.writeMultiVars(items, count);
     }

@@ -1,18 +1,20 @@
 /*
- * PROJECT Mokka7 (fork of Moka7)
+ * PROJECT Mokka7 (fork of Snap7/Moka7)
  *
- * Copyright (C) 2017 J.Zimmermann All rights reserved.
+ * Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * Mokka7 is free software: you can redistribute it and/or modify it under the terms of the Lesser
- * GNU General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or under EPL Eclipse Public License 1.0.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  *
- * This means that you have to chose in advance which take before you import the library into your
- * project.
- *
- * SNAP7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
+ *
+ * Contributors:
+ *    J.Zimmermann    - Mokka7 fork
+ *
  */
 package org.comtel2000.mokka7.client.presentation.connect;
 
@@ -23,13 +25,14 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import org.comtel2000.mokka7.S7Client;
+import org.comtel2000.mokka7.AreaType;
 import org.comtel2000.mokka7.S7CpInfo;
 import org.comtel2000.mokka7.S7OrderCode;
 import org.comtel2000.mokka7.client.presentation.StatusBinding;
 import org.comtel2000.mokka7.client.service.CompletableService;
 import org.comtel2000.mokka7.client.service.PingWatchdogService;
 import org.comtel2000.mokka7.client.service.SessionManager;
+import org.comtel2000.mokka7.metrics.MonitoredS7Client;
 import org.slf4j.LoggerFactory;
 
 import javafx.application.Platform;
@@ -46,13 +49,13 @@ public class ConnectViewPresenter implements Initializable {
     private final static org.slf4j.Logger logger = LoggerFactory.getLogger(ConnectViewPresenter.class);
 
     @Inject
-    StatusBinding log;
+    StatusBinding bindings;
 
     @Inject
     SessionManager session;
 
     @Inject
-    S7Client client;
+    MonitoredS7Client client;
 
     @Inject
     PingWatchdogService pingService;
@@ -101,15 +104,15 @@ public class ConnectViewPresenter implements Initializable {
 
         session.bind(host.textProperty(), "connect.host");
 
-        BooleanBinding disabled = log.connectedProperty().or(log.progressProperty());
+        BooleanBinding disabled = bindings.connectedProperty().or(bindings.progressProperty());
         connect.disableProperty().bind(disabled.or(host.textProperty().isEmpty()));
         host.disableProperty().bind(disabled);
         rack.disableProperty().bind(disabled);
         slot.disableProperty().bind(disabled);
-        disconnect.disableProperty().bind(log.connectedProperty().not().or(log.progressProperty()));
+        disconnect.disableProperty().bind(bindings.connectedProperty().not().or(bindings.progressProperty()));
 
 
-        log.connectedProperty().addListener((l, a, con) -> label0.setText(con ? String.format("online (%s)", host.getText()) : "offine"));
+        bindings.connectedProperty().addListener((l, a, con) -> label0.setText(con ? String.format("online (%s)", host.getText()) : "offine"));
         pingService.setOnPingFailed(this::pingFailed);
         reset();
     }
@@ -117,7 +120,7 @@ public class ConnectViewPresenter implements Initializable {
     @FXML
     public void connect() {
         CompletableService.supply(() -> client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(), slot.getSelectionModel().getSelectedItem()))
-                .bindRunning(log.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields).start();
+                .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields).start();
     }
 
     @FXML
@@ -126,13 +129,13 @@ public class ConnectViewPresenter implements Initializable {
         CompletableService.supply(() -> {
             client.disconnect();
             return true;
-        }).bindRunning(log.progressProperty()).onComplete((b, th) -> log.connectedProperty().set(client.connected)).start();
+        }).bindRunning(bindings.progressProperty()).onComplete((b, th) -> bindings.connectedProperty().set(client.connected)).start();
     }
 
 
     private void pingFailed(Throwable th) {
         logger.error("ping failed", th);
-        Platform.runLater(() -> log.statusTextProperty().set("connection lost to: " + host.getText()));
+        Platform.runLater(() -> bindings.statusTextProperty().set("connection lost to: " + host.getText()));
         disconnect();
     }
 
@@ -141,7 +144,7 @@ public class ConnectViewPresenter implements Initializable {
         if (result == null) {
             return;
         }
-        log.connectedProperty().set(result);
+        bindings.connectedProperty().set(result);
         if (result) {
             pingService.setHost(host.getText());
             pingService.setTimeout(2000);
@@ -150,10 +153,10 @@ public class ConnectViewPresenter implements Initializable {
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
-            log.statusTextProperty().set("connected to: " + host.getText());
-            CompletableService.supply(() -> client.getOrderCode()).bindRunning(log.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
+            bindings.statusTextProperty().set("connected to: " + host.getText());
+            CompletableService.supply(() -> client.getOrderCode()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
         } else {
-            log.statusTextProperty().set("error code: " + result);
+            bindings.statusTextProperty().set("error code: " + result);
         }
     }
 
@@ -162,7 +165,7 @@ public class ConnectViewPresenter implements Initializable {
             label1.setText(code.getCode());
             label2.setText("v." + code.getFirmware());
         }
-        CompletableService.supply(() -> client.getCpInfo()).bindRunning(log.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
+        CompletableService.supply(() -> client.getCpInfo()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
     }
 
     private void update(S7CpInfo info) {
@@ -172,6 +175,8 @@ public class ConnectViewPresenter implements Initializable {
             label4.setText("Max Con: " + info.maxConnections);
             label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
         }
+        
+        CompletableService.supply(() -> client.readBytes(AreaType.S7AreaDB, 200, 0, 64)).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(bindings.hexDataProperty()::set).start();
     }
 
     private void reset() {
@@ -186,10 +191,10 @@ public class ConnectViewPresenter implements Initializable {
     private void report(Throwable th) {
         if (th != null) {
             logger.error(th.getMessage(), th);
-            if (th.getCause() != null){
-                log.statusTextProperty().set(String.format("%s (%s)", th.getMessage(), th.getCause().getMessage()));
-            }else{
-                log.statusTextProperty().set(th.getMessage());
+            if (th.getCause() != null) {
+                bindings.statusTextProperty().set(String.format("%s (%s)", th.getMessage(), th.getCause().getMessage()));
+            } else {
+                bindings.statusTextProperty().set(th.getMessage());
             }
         }
     }

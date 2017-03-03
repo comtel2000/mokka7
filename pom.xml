@@ -39,6 +39,7 @@
 		<module>mokka7-core</module>
 		<module>mokka7-samples</module>
 		<module>mokka-client</module>
+		<module>mokka7-metrics</module>
 	</modules>
 
 	<properties>
@@ -48,6 +49,7 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<junit.version>4.12</junit.version>
 		<slf4j.version>1.7.23</slf4j.version>
+		<metrics.version>3.1.2</metrics.version>
 	</properties>
 	<licenses>
 		<license>
@@ -57,18 +59,18 @@
 		</license>
 	</licenses>
 
-		<dependencies>
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-api</artifactId>
-				<version>${slf4j.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>junit</groupId>
-				<artifactId>junit</artifactId>
-				<version>${junit.version}</version>
-				<scope>test</scope>
-			</dependency>
-		</dependencies>
+	<dependencies>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
 </project>

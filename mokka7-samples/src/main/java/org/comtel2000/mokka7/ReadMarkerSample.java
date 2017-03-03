@@ -1,55 +1,62 @@
 /*
  * PROJECT Mokka7 (fork of Snap7/Moka7)
- *
+ * 
  * Copyright (c) 2017 J.Zimmermann (comtel2000)
- *
+ * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
+ * 
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
- *
+ * 
  * Contributors:
  *    J.Zimmermann    - Mokka7 fork
- *
+ * 
  */
 package org.comtel2000.mokka7;
 
-public class ReadByteSample extends ClientRunner {
+import org.junit.Assert;
 
-    final int db = 201;
+public class ReadMarkerSample extends ClientRunner {
 
-    public ReadByteSample() {
+
+    public ReadMarkerSample() {
         super();
     }
 
     @Override
     public void call(S7Client client) throws Exception {
 
-        client.readArea(AreaType.S7AreaDB, db, 0, 1, DataType.S7WLByte, buffer);
+        client.readArea(AreaType.S7AreaMK, 0, 0, 1, DataType.S7WLByte, buffer);
         bitSet(buffer[0]);
-        S7.hexDump(buffer, 2, System.out::println);
 
-        byte b = client.readByte(AreaType.S7AreaDB, db, 0);
+        byte b = client.readByte(AreaType.S7AreaMK, 0, 0);
         bitSet(b);
-        S7.hexDump(buffer, 2, System.out::println);
 
-        client.readArea(AreaType.S7AreaDB, db, 1, 1, DataType.S7WLByte, buffer);
+        Assert.assertEquals(buffer[0], b);
+
+        client.readArea(AreaType.S7AreaMK, 0, 1, 1, DataType.S7WLByte, buffer);
         bitSet(buffer[0]);
-        S7.hexDump(buffer, 2, System.out::println);
 
-        b = client.readByte(AreaType.S7AreaDB, db, 1);
+        Assert.assertEquals(buffer[0], b);
+
+        b = client.readByte(AreaType.S7AreaMK, 0, 1);
         bitSet(b);
-        S7.hexDump(buffer, 2, System.out::println);
 
-        byte[] bytes = client.readBytes(AreaType.S7AreaDB, 200, 0, 64);
-        S7.hexDump(bytes, System.out::println);
+        boolean flag = client.readBit(AreaType.S7AreaMK, 0, 12, 0);
+        System.out.println("M12.0=" + flag);
+
+        flag = client.readBit(AreaType.S7AreaMK, 0, 12, 1);
+        System.out.println("M12.1=" + flag);
+
+        flag = client.readBit(AreaType.S7AreaMK, 0, 12, 2);
+        System.out.println("M12.2=" + flag);
     }
 
     public static void main(String[] args) {
-        new ReadByteSample();
+        new ReadMarkerSample();
     }
 }
