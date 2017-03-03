@@ -54,10 +54,6 @@ public class S7 {
     public static final int BlockLangDB = 0x05;
     public static final int BlockLangGRAPH = 0x06;
 
-    // Type Var
-    public static final int S7TypeBool = 1;
-    public static final int S7TypeInt = 1;
-
     // Sub Block Type
     public static final int SubBlk_OB = 0x08;
     public static final int SubBlk_DB = 0x0A;
@@ -146,28 +142,17 @@ public class S7 {
         return Float.intBitsToFloat(IntFloat);
     }
 
-    /**
-     * The buffer as UTF-8 String
-     *
-     * @param buffer
-     * @param pos
-     * @param maxLen
-     * @return
-     */
     public static String getPrintableStringAt(byte[] buffer, int pos, int maxLen) {
-        return getPrintableStringAt(buffer, pos, maxLen, StandardCharsets.UTF_8);
-    }
-
-    public static String getPrintableStringAt(byte[] buffer, int pos, int maxLen, Charset cs) {
-        byte[] temp = new byte[maxLen];
-        System.arraycopy(buffer, pos, temp, 0, maxLen);
-        for (int i = 0; i < temp.length; i++) {
-            // non ascii to '.'
-            if ((temp[i] < 31) || (temp[i] > 126)) {
-                temp[i] = DOT_CHAR;
+        StringBuilder sb = new StringBuilder();
+        for (int i = pos; i < pos + maxLen; i++) {
+            char ch = (char) (buffer[i] & 0xFF);
+            if (Character.isISOControl(ch) || Character.isWhitespace(ch)) {
+                sb.append(DOT_CHAR);
+                continue;
             }
+            sb.append(ch);
         }
-        return new String(temp, cs);
+        return sb.toString();
     }
 
     // Returns a 16 bit signed value : from -32768 to 32767
@@ -357,11 +342,12 @@ public class S7 {
                     sb.append(EMP_CHAR);
                     continue;
                 }
-                if (buffer[pos + i] < 31 || buffer[pos + i] > 126) {
+                char ch = (char) (buffer[pos + i] & 0xFF);
+                if (Character.isISOControl(ch) || Character.isWhitespace(ch)) {
                     sb.append(DOT_CHAR);
                     continue;
                 }
-                sb.append((char) buffer[pos + i]);
+                sb.append(ch);
             }
             c.accept(sb.toString());
         }

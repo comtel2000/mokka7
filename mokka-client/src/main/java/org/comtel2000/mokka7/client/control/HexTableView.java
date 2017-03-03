@@ -1,22 +1,22 @@
 /*
  * PROJECT Mokka7 (fork of Snap7/Moka7)
- * 
+ *
  * Copyright (c) 2017 J.Zimmermann (comtel2000)
- * 
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
+ *
+ * All rights reserved. This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
- * 
- * Contributors:
- *    J.Zimmermann    - Mokka7 fork
- * 
+ *
+ * Contributors: J.Zimmermann - Mokka7 fork
+ *
  */
 package org.comtel2000.mokka7.client.control;
+
+import java.util.Objects;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
@@ -57,7 +57,7 @@ public class HexTableView extends TableView<Integer> {
     }
 
     public void setData(byte[] data) {
-        this.data = data;
+        this.data = Objects.requireNonNull(data);
         initItems(Math.floorDiv(data.length, 16) + 1);
     }
 
@@ -141,12 +141,12 @@ public class HexTableView extends TableView<Integer> {
                 sb.append(EMP_CHAR);
                 continue;
             }
-            if (data[pos + i] < 31 || data[pos + i] > 126) {
+            char ch = (char) (data[pos + i] & 0xFF);
+            if (Character.isISOControl(ch) || Character.isWhitespace(ch)) {
                 sb.append(DOT_CHAR);
                 continue;
             }
-
-            sb.append((char) data[pos + i]);
+            sb.append(ch);
         }
         return sb.toString();
     }
