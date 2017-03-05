@@ -42,7 +42,9 @@ public class Mokka7App extends Application {
     @Override
     public void start(Stage stage) throws Exception {
 
-        stage.setTitle("Mokka7 client (" + System.getProperty("javafx.runtime.version") + ")");
+        String version = Mokka7App.class.getPackage().getImplementationVersion();
+        
+        stage.setTitle(String.format("Mokka7 client v.%s", version != null ? version : "DEV"));
         stage.setResizable(true);
 
         Injector.setLogger((t) -> logger.trace(t));
@@ -66,7 +68,12 @@ public class Mokka7App extends Application {
             System.exit(0);
         });
         stage.setScene(scene);
-        stage.getIcons().add(new Image(Mokka7App.class.getResourceAsStream("icon.png")));
+        Image icon16 = new Image(getClass().getResourceAsStream("icon-16x16.png"));
+        Image icon32 = new Image(getClass().getResourceAsStream("icon-32x32.png"));
+        Image icon48 = new Image(getClass().getResourceAsStream("icon-48x48.png"));
+        
+        stage.getIcons().addAll(icon16, icon32, icon48);
+        
         stage.show();
 
     }

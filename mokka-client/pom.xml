@@ -6,9 +6,16 @@
 		<artifactId>mokka7</artifactId>
 		<version>0.1.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>mokka-client</artifactId>
-	<name>Mokka7 Client App</name>
+	<artifactId>mokka7-client</artifactId>
+	<name>mokka7</name>
 	<description>Mokka UI client</description>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<app.main.class>org.comtel2000.mokka7.client.Mokka7App</app.main.class>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.airhacks</groupId>
@@ -18,7 +25,7 @@
 		<dependency>
 			<groupId>eu.hansolo</groupId>
 			<artifactId>tilesfx</artifactId>
-			<version>1.3.6</version>
+			<version>1.3.7</version>
 		</dependency>
 		<dependency>
 			<groupId>org.comtel2000</groupId>
@@ -36,4 +43,45 @@
 			<version>1.2.0</version>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.7</version>
+			</plugin>
+			<plugin>
+				<groupId>com.zenjava</groupId>
+				<artifactId>javafx-maven-plugin</artifactId>
+				<version>8.8.3</version>
+				<configuration>
+					<verbose>true</verbose>
+					<vendor>comtel2000</vendor>
+					<title>Mokka7 Client</title>
+					<appName>${project.name}</appName>
+					<mainClass>${app.main.class}</mainClass>
+					<manifestAttributes>
+						<Implementation-Version>${project.version}</Implementation-Version>
+					</manifestAttributes>
+				</configuration>
+			</plugin>
+		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/java</directory>
+				<filtering>false</filtering>
+				<includes>
+					<include>**/*.fxml</include>
+					<include>**/*.css</include>
+					<include>**/*.properties</include>
+					<include>**/*.ttf</include>
+					<include>**/*.png</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+	</build>
 </project>
