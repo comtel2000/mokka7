@@ -1,21 +1,17 @@
 /*
  * PROJECT Mokka7 (fork of Snap7/Moka7)
  *
- * Copyright (c) 2013,2016 Davide Nardella
- * Copyright (c) 2017 J.Zimmermann (comtel2000)
+ * Copyright (c) 2013,2016 Davide Nardella Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
  *
- * Contributors:
- *    Davide Nardella - initial API and implementation
- *    J.Zimmermann    - Mokka7 fork
+ * Contributors: Davide Nardella - initial API and implementation J.Zimmermann - Mokka7 fork
  *
  */
 package org.comtel2000.mokka7;
@@ -151,14 +147,14 @@ public class S7Test {
     }
 
     @Test
-    public void testSetDateAt(){
+    public void testSetDateAt() {
         // 1987-04-15
         long enc = 20 * 60;
         LocalDateTime date = LocalDateTime.of(1984, 1, 1, 0, 0).plusSeconds(enc * 86400);
 
         long S7_TIME_OFFSET = 441763200000L;
         long millis = enc * 86400000L + S7_TIME_OFFSET;
-        Date date2 =  new Date(millis);
+        Date date2 = new Date(millis);
         assertEquals(date.toInstant(ZoneOffset.UTC), date2.toInstant());
 
         LocalDateTime date3 = LocalDateTime.ofEpochSecond(millis / 1000, 0, ZoneOffset.UTC);
@@ -176,7 +172,7 @@ public class S7Test {
     }
 
     @Test
-    public void testSetGetDateTimeAt(){
+    public void testSetGetDateTimeAt() {
         LocalDateTime date = LocalDateTime.now();
         byte[] buffer = new byte[32];
         Arrays.fill(buffer, (byte) 0);
@@ -186,7 +182,7 @@ public class S7Test {
     }
 
     @Test
-    public void testSetGetDateAt(){
+    public void testSetGetDateAt() {
         Calendar cal = new GregorianCalendar();
         cal.set(Calendar.MILLISECOND, 0);
         Date date = cal.getTime();
@@ -196,9 +192,9 @@ public class S7Test {
         Date dateRet = S7.getDateAt(buffer, 0);
         assertEquals(date, dateRet);
     }
-    
+
     @Test
-    public void testSetGetS7StringAt(){
+    public void testSetGetS7StringAt() {
         String value = "\u001eDEMO";
         byte[] buffer = new byte[32];
         Arrays.fill(buffer, (byte) 0);

@@ -3,17 +3,15 @@
  *
  * Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
  *
- * Contributors:
- *    J.Zimmermann    - Mokka7 fork
+ * Contributors: J.Zimmermann - Mokka7 fork
  *
  */
 package org.comtel2000.mokka7.client.presentation.connect;
@@ -122,7 +120,7 @@ public class ConnectViewPresenter implements Initializable {
         label0.setText(text);
         bindings.statusTextProperty().set(text);
     }
-    
+
     @FXML
     public void connect() {
         bindings.statusTextProperty().set("try to connect to: " + host.getText());
@@ -161,7 +159,8 @@ public class ConnectViewPresenter implements Initializable {
                 logger.error(e.getMessage(), e);
             }
             bindings.statusTextProperty().set("connected to: " + host.getText());
-            CompletableService.supply(() -> client.getOrderCode()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
+            CompletableService.supply(() -> client.getOrderCode()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update)
+                    .start();
         } else {
             bindings.statusTextProperty().set("error code: " + result);
         }
@@ -182,8 +181,9 @@ public class ConnectViewPresenter implements Initializable {
             label4.setText("Max Con: " + info.maxConnections);
             label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
         }
-        
-        CompletableService.supply(() -> client.readBytes(AreaType.DB, 200, 0, 64)).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(bindings.hexDataProperty()::set).start();
+
+        CompletableService.supply(() -> client.readBytes(AreaType.DB, 200, 0, 64)).bindRunning(bindings.progressProperty()).onFailed(this::report)
+                .onSucceeded(bindings.hexDataProperty()::set).start();
     }
 
     private void reset() {

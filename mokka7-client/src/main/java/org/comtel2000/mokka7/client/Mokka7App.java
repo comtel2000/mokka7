@@ -3,17 +3,15 @@
  *
  * Copyright (c) 2017 J.Zimmermann (comtel2000)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
+ * All rights reserved. This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
  *
- * Contributors:
- *    J.Zimmermann    - Mokka7 fork
+ * Contributors: J.Zimmermann - Mokka7 fork
  *
  */
 package org.comtel2000.mokka7.client;
@@ -43,7 +41,7 @@ public class Mokka7App extends Application {
     public void start(Stage stage) throws Exception {
 
         String version = Mokka7App.class.getPackage().getImplementationVersion();
-        
+
         stage.setTitle(String.format("Mokka7 client v.%s", version != null ? version : "DEV"));
         stage.setResizable(true);
 
@@ -71,9 +69,9 @@ public class Mokka7App extends Application {
         Image icon16 = new Image(getClass().getResourceAsStream("icon-16x16.png"));
         Image icon32 = new Image(getClass().getResourceAsStream("icon-32x32.png"));
         Image icon48 = new Image(getClass().getResourceAsStream("icon-48x48.png"));
-        
+
         stage.getIcons().addAll(icon16, icon32, icon48);
-        
+
         stage.show();
 
     }

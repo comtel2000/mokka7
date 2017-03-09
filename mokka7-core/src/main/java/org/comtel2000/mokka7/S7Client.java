@@ -55,7 +55,7 @@ public class S7Client implements Client, ReturnCode {
 
     private static final Logger logger = LoggerFactory.getLogger(S7Client.class);
 
-    /** Max number of vars (multiread/write) -> max PDU size*/
+    /** Max number of vars (multiread/write) -> max PDU size */
     public static final int MAX_VARS = 20;
 
     /** Result transport size */
@@ -709,7 +709,7 @@ public class S7Client implements Client, ReturnCode {
                 default:
                     dataItem[1] = TS_RESBYTE; // byte/word/dword etc.
                     break;
-            };
+            }
             if ((items[c].type == DataType.TIMER) || (items[c].type == DataType.COUNTER)) {
                 itemDataSize = items[c].amount * 2;
             } else {

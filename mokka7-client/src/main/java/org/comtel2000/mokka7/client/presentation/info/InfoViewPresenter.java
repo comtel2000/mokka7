@@ -17,29 +17,21 @@
 package org.comtel2000.mokka7.client.presentation.info;
 
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
 import javax.inject.Inject;
 
-import org.comtel2000.mokka7.client.control.HexTableView;
 import org.comtel2000.mokka7.client.presentation.StatusBinding;
-import org.comtel2000.mokka7.client.service.CompletableService;
 import org.comtel2000.mokka7.client.service.SessionManager;
 import org.comtel2000.mokka7.exception.S7Exception;
 import org.comtel2000.mokka7.metrics.MonitoredS7Client;
-import org.comtel2000.mokka7.type.AreaType;
-import org.comtel2000.mokka7.type.DataType;
 import org.slf4j.LoggerFactory;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.BorderPane;
 
 public class InfoViewPresenter implements Initializable {
