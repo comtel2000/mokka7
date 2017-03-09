@@ -112,13 +112,20 @@ public class ConnectViewPresenter implements Initializable {
         disconnect.disableProperty().bind(bindings.connectedProperty().not().or(bindings.progressProperty()));
 
 
-        bindings.connectedProperty().addListener((l, a, con) -> label0.setText(con ? String.format("online (%s)", host.getText()) : "offine"));
+        bindings.connectedProperty().addListener((l, a, con) -> update(con));
         pingService.setOnPingFailed(this::pingFailed);
         reset();
     }
 
+    private void update(boolean connected) {
+        String text = connected ? String.format("online (%s)", host.getText()) : "offine";
+        label0.setText(text);
+        bindings.statusTextProperty().set(text);
+    }
+    
     @FXML
     public void connect() {
+        bindings.statusTextProperty().set("try to connect to: " + host.getText());
         CompletableService.supply(() -> client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(), slot.getSelectionModel().getSelectedItem()))
                 .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields).start();
     }

@@ -7,12 +7,16 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.text.Font?>
 
 <BorderPane fx:id="mainPane" prefHeight="-1.0" prefWidth="-1.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.mokka7.client.presentation.MainViewPresenter">
   <bottom>
     <HBox maxHeight="20.0" minHeight="20.0" prefHeight="20.0" prefWidth="400.0" spacing="10.0" styleClass="tool-bar">
       <children>
-        <Label fx:id="status" text="Label" HBox.hgrow="ALWAYS" />
+        <Label fx:id="status" text="Label" HBox.hgrow="ALWAYS">
+               <font>
+                  <Font name="System Bold" size="11.0" />
+               </font></Label>
             <Region prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
         <ProgressIndicator fx:id="progress" disable="false" minHeight="14.0" prefHeight="16.0" prefWidth="23.0" progress="-1.0" />
       </children>

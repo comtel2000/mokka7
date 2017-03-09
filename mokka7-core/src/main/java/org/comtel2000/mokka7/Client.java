@@ -46,7 +46,6 @@ public interface Client {
 
     final byte[] buffer = new byte[1024];
 
-
     boolean clearSessionPassword() throws S7Exception;
 
     /**
@@ -71,13 +70,48 @@ public interface Client {
      * Connects the client to the hardware at (IP, Rack, Slot) Coordinates.
      *
      * <table summary="PLC settings">
-     * <tr><th>PLC</th><th>Rack</th><th>Slot</th><th>Options</th></tr>
-     * <tr><td>S7 300 CPU</td><td>0</td><td>2</td><td>Always</td></tr>
-     * <tr><td>S7 400 CPU</td><td>0..X</td><td>0..X</td><td>Follow the hardware configuration</td></tr>
-     * <tr><td>S7 1200 CPU</td><td>0</td><td>0</td><td>Or 0, 1</td></tr>
-     * <tr><td>S7 1500 CPU</td><td>0</td><td>0</td><td>Or 0, 1</td></tr>
-     * <tr><td>WinAC CPU</td><td>0..X</td><td>0..X</td><td>Follow the hardware configuration</td></tr>
-     * <tr><td>WinAC IE</td><td>0</td><td>0</td><td>Or follow the hardware configuration</td></tr>
+     * <tr>
+     * <th>PLC</th>
+     * <th>Rack</th>
+     * <th>Slot</th>
+     * <th>Options</th>
+     * </tr>
+     * <tr>
+     * <td>S7 300 CPU</td>
+     * <td>0</td>
+     * <td>2</td>
+     * <td>Always</td>
+     * </tr>
+     * <tr>
+     * <td>S7 400 CPU</td>
+     * <td>0..X</td>
+     * <td>0..X</td>
+     * <td>Follow the hardware configuration</td>
+     * </tr>
+     * <tr>
+     * <td>S7 1200 CPU</td>
+     * <td>0</td>
+     * <td>0</td>
+     * <td>Or 0, 1</td>
+     * </tr>
+     * <tr>
+     * <td>S7 1500 CPU</td>
+     * <td>0</td>
+     * <td>0</td>
+     * <td>Or 0, 1</td>
+     * </tr>
+     * <tr>
+     * <td>WinAC CPU</td>
+     * <td>0..X</td>
+     * <td>0..X</td>
+     * <td>Follow the hardware configuration</td>
+     * </tr>
+     * <tr>
+     * <td>WinAC IE</td>
+     * <td>0</td>
+     * <td>0</td>
+     * <td>Or follow the hardware configuration</td>
+     * </tr>
      * </table>
      *
      * @param address host or ip address
@@ -98,6 +132,17 @@ public interface Client {
      * @throws S7Exception ex
      */
     int dbGet(int db, byte[] buffer) throws S7Exception;
+
+    /**
+     * Fill the entire DB from the PLC with a fill byte parameter. As output will contain the size
+     * written.
+     *
+     * @param db DB number
+     * @param fill char/byte to fill with
+     * @return the written byte count
+     * @throws S7Exception ex
+     */
+    int dbFill(int db, byte fill) throws S7Exception;
 
     /**
      * Disconnects "gracefully" the Client from the PLC.
@@ -157,9 +202,23 @@ public interface Client {
      */
     void setConnectionType(ConnectionType type);
 
+    /**
+     * Writes the given DateTime to the PLC
+     *
+     * @param dateTime time
+     * @return succeed
+     * @throws S7Exception ex
+     */
     boolean setPlcDateTime(LocalDateTime dateTime) throws S7Exception;
 
-    boolean setPlcSystemDateTime() throws S7Exception;
+    /**
+     * Set the current time to PLC
+     *
+     * @return succeed
+     * @throws S7Exception ex
+     * @see #setPlcDateTime(LocalDateTime)
+     */
+    boolean setPlcDateTime() throws S7Exception;
 
     boolean setSessionPassword(String password) throws S7Exception;
 
@@ -278,4 +337,5 @@ public interface Client {
     public int readArea(AreaType area, int db, int start, int amount, DataType wordLen, byte[] buffer) throws S7Exception;
 
     public boolean writeArea(AreaType area, int db, int start, int amount, DataType type, byte[] buffer) throws S7Exception;
+
 }

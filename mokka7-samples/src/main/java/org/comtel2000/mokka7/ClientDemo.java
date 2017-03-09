@@ -68,7 +68,7 @@ public class ClientDemo {
     }
 
     static void testEnd(boolean result) {
-        if (result) {
+        if (!result) {
             ko++;
         } else {
             ok++;
@@ -287,7 +287,7 @@ public class ClientDemo {
     public static void syncDateAndTime() {
         testBegin("SetPlcSystemDateTime()");
         try {
-            testEnd(client.setPlcSystemDateTime());
+            testEnd(client.setPlcDateTime());
         } catch (S7Exception e) {
             error(e.getErrorCode());
             testEnd(false);
@@ -391,6 +391,7 @@ public class ClientDemo {
     }
 
     public static void main(String[] args) throws IOException {
+        args[0] = "127.0.0.1";
         if ((args.length != 1) && (args.length != 3)) {
             usage();
             return;

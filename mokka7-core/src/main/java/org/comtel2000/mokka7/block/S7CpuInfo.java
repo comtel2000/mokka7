@@ -37,11 +37,11 @@ public class S7CpuInfo {
 
     public static S7CpuInfo of(byte[] src, int pos) {
         S7CpuInfo info = new S7CpuInfo();
-        info.update(src, pos);
+        info.decode(src, pos);
         return info;
     }
 
-    protected void update(byte[] src, int pos) {
+    protected void decode(byte[] src, int pos) {
         asName = S7.getStringAt(src, pos + 2, 24);
         copyright = S7.getStringAt(src, pos + 104, 26);
         moduleName = S7.getStringAt(src, pos + 36, 24);

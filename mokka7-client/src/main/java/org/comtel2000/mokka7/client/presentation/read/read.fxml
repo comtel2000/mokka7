@@ -9,7 +9,6 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 
-
 <BorderPane fx:id="pane" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.mokka7.client.presentation.read.ReadViewPresenter">
    <right>
       <ScrollPane fitToWidth="true">
@@ -53,6 +52,13 @@
                         <Insets top="30.0" />
                      </VBox.margin>
                   </Button>
+                  <Label text="Value">
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                  </Label>
+                  <TextField fx:id="value" maxWidth="1.7976931348623157E308" promptText="Value" />
+                  <Button fx:id="write" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#write" text="Write" />
                </children>
                <padding>
                   <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />

@@ -36,7 +36,7 @@ public class S7OrderCode {
 
     public static S7OrderCode of(byte[] src, int pos, int size) {
         S7OrderCode oc = new S7OrderCode();
-        oc.update(src, pos, size);
+        oc.decode(src, pos, size);
         return oc;
     }
 
@@ -48,7 +48,7 @@ public class S7OrderCode {
         return String.format("%s.%s.%s", v1, v2, v3);
     }
 
-    protected void update(byte[] src, int pos, int size) {
+    protected void decode(byte[] src, int pos, int size) {
         code = S7.getStringAt(src, pos + 2, 20);
         v1 = src[pos + size - 3];
         v2 = src[pos + size - 2];

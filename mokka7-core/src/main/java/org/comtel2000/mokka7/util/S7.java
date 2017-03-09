@@ -85,7 +85,7 @@ public class S7 {
         sec = bcdToByte(buffer[pos + 5]);
 
         cal.set(year, month, day, hour, min, sec);
-
+        cal.set(Calendar.MILLISECOND, 0);
         return cal.getTime();
     }
 
@@ -93,11 +93,17 @@ public class S7 {
         int year, month, day, hour, min, sec;
         year = bcdToByte(buffer[pos]);
         year += year < 90 ? 2000 : 1900;
-        month = bcdToByte(buffer[pos + 1]) - 1;
+        month = bcdToByte(buffer[pos + 1]);
         day = bcdToByte(buffer[pos + 2]);
         hour = bcdToByte(buffer[pos + 3]);
         min = bcdToByte(buffer[pos + 4]);
         sec = bcdToByte(buffer[pos + 5]);
+
+        // First two digits of miliseconds
+        // int msecH = bcdToByte(buffer[pos + 6]) * 10;
+        // Last digit of miliseconds
+        // int msecL = bcdToByte(buffer[pos + 7]) / 10;
+
         return LocalDateTime.of(year, month, day, hour, min, sec);
     }
 
@@ -145,6 +151,11 @@ public class S7 {
         return new String(buffer, pos, maxLen, charset);
     }
 
+    public static String getS7StringAt(byte[] buffer, int pos) {
+        int length = buffer[pos + 1];
+        return new String(buffer, pos + 2, length, StandardCharsets.UTF_8);
+    }
+
     public static byte getByteAt(byte[] buffer, int pos) {
         return buffer[pos];
     }
@@ -179,10 +190,10 @@ public class S7 {
         }
     }
 
-    public static void setDateAt(byte[] buffer, int pos, Date dateTime) {
-        int year, month, day, hour, min, sec, dow;
+    public static void setDateAt(byte[] buffer, int pos, Date date) {
+        int year, month, day, hour, min, sec;
         Calendar cal = Calendar.getInstance();
-        cal.setTime(dateTime);
+        cal.setTime(date);
 
         year = cal.get(Calendar.YEAR);
         month = cal.get(Calendar.MONTH) + 1;
@@ -190,44 +201,51 @@ public class S7 {
         hour = cal.get(Calendar.HOUR_OF_DAY);
         min = cal.get(Calendar.MINUTE);
         sec = cal.get(Calendar.SECOND);
-        dow = cal.get(Calendar.DAY_OF_WEEK);
+        // milli = cal.get(Calendar.MILLISECOND);
+        // // First two digits of miliseconds
+        // int msecH = milli / 10;
+        // // Last digit of miliseconds
+        // int msecL = milli % 10;
 
         if (year > 1999) {
             year -= 2000;
         }
-
         buffer[pos] = byteToBCD(year);
         buffer[pos + 1] = byteToBCD(month);
         buffer[pos + 2] = byteToBCD(day);
         buffer[pos + 3] = byteToBCD(hour);
         buffer[pos + 4] = byteToBCD(min);
         buffer[pos + 5] = byteToBCD(sec);
-        buffer[pos + 6] = 0;
-        buffer[pos + 7] = byteToBCD(dow);
+        buffer[pos + 6] = byteToBCD(0);
+        buffer[pos + 7] = byteToBCD(0);
+
     }
 
     public static void setDateTimeAt(byte[] buffer, int pos, LocalDateTime dateTime) {
-        int year, month, day, hour, min, sec, dow;
+        int year, month, day, hour, min, sec;
         year = dateTime.get(ChronoField.YEAR);
         month = dateTime.get(ChronoField.MONTH_OF_YEAR);
         day = dateTime.get(ChronoField.DAY_OF_MONTH);
         hour = dateTime.get(ChronoField.HOUR_OF_DAY);
         min = dateTime.get(ChronoField.MINUTE_OF_HOUR);
         sec = dateTime.get(ChronoField.SECOND_OF_MINUTE);
-        dow = dateTime.get(ChronoField.DAY_OF_WEEK);
+        // milli = dateTime.get(ChronoField.MILLI_OF_SECOND);
+        // // First two digits of miliseconds
+        // int msecH = milli / 10;
+        // // Last digit of miliseconds
+        // int msecL = milli % 10;
 
         if (year > 1999) {
             year -= 2000;
         }
-
         buffer[pos] = byteToBCD(year);
         buffer[pos + 1] = byteToBCD(month);
         buffer[pos + 2] = byteToBCD(day);
         buffer[pos + 3] = byteToBCD(hour);
         buffer[pos + 4] = byteToBCD(min);
         buffer[pos + 5] = byteToBCD(sec);
-        buffer[pos + 6] = 0;
-        buffer[pos + 7] = byteToBCD(dow);
+        buffer[pos + 6] = byteToBCD(0);
+        buffer[pos + 7] = byteToBCD(0);
     }
 
     public static void setDIntAt(byte[] buffer, int pos, int value) {
@@ -272,6 +290,13 @@ public class S7 {
 
     public static void setStringAt(byte[] buffer, int pos, String value, Charset charset) {
         setBytesAt(buffer, pos, value.getBytes(charset));
+    }
+
+    public static void setS7StringAt(byte[] buffer, int pos, int maxLen, String value) {
+        byte[] data = value.getBytes(StandardCharsets.UTF_8);
+        buffer[pos] = (byte) (maxLen & 0xFF);
+        buffer[pos + 1] = (byte) (data.length & 0xFF);
+        System.arraycopy(data, 0, buffer, pos + 2, Math.min(data.length, maxLen));
     }
 
     public static void hexDump(byte[] buffer, Consumer<String> c) {

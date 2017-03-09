@@ -22,6 +22,7 @@ import java.util.ResourceBundle;
 import javax.inject.Inject;
 
 import org.comtel2000.mokka7.client.presentation.connect.ConnectView;
+import org.comtel2000.mokka7.client.presentation.info.InfoView;
 import org.comtel2000.mokka7.client.presentation.read.ReadView;
 import org.comtel2000.mokka7.client.service.SessionManager;
 import org.comtel2000.mokka7.metrics.MonitoredS7Client;
@@ -78,22 +79,9 @@ public class MainViewPresenter implements Initializable {
         logger.debug("session id: {} ", session.getSessionName());
     }
 
-
     private void loadTabs() {
-        tabPane.getTabs().add(buildTab("READ", new ReadView().getView(), false));
-
-        // tabPane.getTabs().add(buildTab("CONFIG", new ConfigView().getView(), false));
-
-        // tabPane.getTabs().add(buildTab("MULTIREAD", new MultiReadView().getView(), true));
-        // tabPane.getTabs().add(buildTab("WRITE", new WriteView().getView(), true));
-        // tabPane.getTabs().add(buildTab("GAUGE", new GaugeView().getView(), true));
-        // tabPane.getTabs().add(buildTab("LED", new LEDView().getView(), true));
-        // tabPane.getTabs().add(buildTab("CLOCK", new ClockView().getView(), true));
-        // tabPane.getTabs().add(buildTab("SERIAL", new SerialView().getView(), true));
-        // tabPane.getTabs().add(buildTab("XML", new XmlReadView().getView(), true));
-        // tabPane.getTabs().add(buildTab("CHART", new ChartView().getView(), true));
-        // tabPane.getTabs().add(buildTab("HEARTBEAT", new HeartBeatView().getView(), true));
-
+        tabPane.getTabs().add(buildTab("System Info", new InfoView().getView(), false));
+        tabPane.getTabs().add(buildTab("Read/Write", new ReadView().getView(), false));
     }
 
 

@@ -34,7 +34,7 @@ public abstract class ClientRunner {
 
     protected static final Logger logger = LoggerFactory.getLogger(ClientRunner.class);
 
-    private static final String host = "192.168.100.250";
+    private static final String host = "127.0.0.1";
     private static final int rack = 0;
     private static final int slot = 0;
 

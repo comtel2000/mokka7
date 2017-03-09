@@ -27,25 +27,25 @@ package org.comtel2000.mokka7.block;
  */
 public enum BlockType {
 
-    /** Block type OB */
+    /** Organization Block */
     OB(0x38),
 
-    /** Block type DB */
+    /** User Data Block */
     DB(0x41),
 
-    /** Block type SDB */
+    /** System Data Block */
     SDB(0x42),
 
-    /** Block type FC */
+    /** User Function */
     FC(0x43),
 
-    /** Block type SFC */
+    /** System Function */
     SFC(0x44),
 
-    /** Block type FB */
+    /** User Function Block */
     FB(0x45),
 
-    /** Block type SFB */
+    /** System Function Block */
     SFB(0x46);
 
     private final byte value;

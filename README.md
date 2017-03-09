@@ -1,5 +1,6 @@
 # Mokka7
 [![Build status](https://travis-ci.org/comtel2000/mokka7.svg?branch=master)](https://travis-ci.org/comtel2000/mokka7)
+[![Codacy Badge](https://api.codacy.com/project/badge/grade/6f9977dc35fc4eb1b51328539c7515ea)](https://www.codacy.com/app/comtel2000/mokka7)
 
 ## About
 Mokka7/Snap7 is an open source, 32/64 bit, multi-platform Ethernet communication suite for interfacing natively with Siemens S7 PLCs. The new CPUs 1200/1500, the old S7200, the small LOGO 0BA7/0BA8 and SINAMICS Drives are also partially supported.

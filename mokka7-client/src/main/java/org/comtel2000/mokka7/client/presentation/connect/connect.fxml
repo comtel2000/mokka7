@@ -13,13 +13,13 @@
 
 <GridPane hgap="10.0" styleClass="tool-bar" vgap="2.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.mokka7.client.presentation.connect.ConnectViewPresenter">
    <columnConstraints>
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="160.0" minWidth="160.0" prefWidth="160.0" />
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="0.0" prefWidth="80.0" />
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="10.0" prefWidth="100.0" />
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="110.0" minWidth="10.0" prefWidth="110.0" />
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="100.0" minWidth="0.0" prefWidth="338.0" />
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="10.0" prefWidth="150.0" />
-      <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="10.0" prefWidth="150.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="-Infinity" prefWidth="150.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="100.0" minWidth="80.0" prefWidth="100.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="100.0" minWidth="70.0" prefWidth="100.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="100.0" minWidth="100.0" prefWidth="100.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="100.0" minWidth="100.0" prefWidth="338.0" />
+      <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="50.0" prefWidth="150.0" />
+      <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" minWidth="50.0" prefWidth="150.0" />
    </columnConstraints>
    <rowConstraints>
       <RowConstraints minHeight="10.0" valignment="BOTTOM" vgrow="SOMETIMES" />

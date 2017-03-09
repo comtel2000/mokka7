@@ -36,11 +36,11 @@ public class S7CpInfo {
 
     public static S7CpInfo of(byte[] src, int pos) {
         S7CpInfo info = new S7CpInfo();
-        info.update(src, pos);
+        info.decode(src, pos);
         return info;
     }
 
-    protected void update(byte[] src, int pos) {
+    protected void decode(byte[] src, int pos) {
         maxPduLength = S7.getShortAt(src, 2);
         maxConnections = S7.getShortAt(src, 4);
         maxMpiRate = S7.getDIntAt(src, 6);

@@ -38,7 +38,7 @@
 	<modules>
 		<module>mokka7-core</module>
 		<module>mokka7-samples</module>
-		<module>mokka-client</module>
+		<module>mokka7-client</module>
 		<module>mokka7-metrics</module>
 	</modules>
 

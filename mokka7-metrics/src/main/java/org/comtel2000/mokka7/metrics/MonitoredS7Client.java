@@ -140,10 +140,11 @@ public class MonitoredS7Client extends S7Client implements Closeable {
     }
 
     @Override
-    protected void buildException(int code, Throwable e) throws S7Exception {
+    protected S7Exception buildException(int code, Throwable e) {
         exceptions.inc();
-        super.buildException(code, e);
+        return super.buildException(code, e);
     }
+
     @Override
     public void close() {
         reporter.close();
