@@ -18,6 +18,7 @@ package org.comtel2000.mokka7.client.presentation.read;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import javax.inject.Inject;
@@ -35,7 +36,10 @@ import org.slf4j.LoggerFactory;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -80,11 +84,16 @@ public class ReadViewPresenter implements Initializable {
     private Button read;
 
     @FXML
+    private Button dbget;
+
+    @FXML
     private TextField value;
 
     @FXML
     private Button write;
 
+    @FXML
+    private Button dbfill;
 
     private final byte[] buffer = new byte[16 * 32];
 
@@ -111,8 +120,9 @@ public class ReadViewPresenter implements Initializable {
                 .bind(bindings.progressProperty().or(bindings.connectedProperty().not()).or(db.textProperty().isEmpty()).or(start.textProperty().isEmpty())
                         .or(amount.textProperty().isEmpty()).or(area.getSelectionModel().selectedItemProperty().isNull())
                         .or(dataType.getSelectionModel().selectedItemProperty().isNull()));
-
-        write.disableProperty().bind(read.disabledProperty());
+        dbget.disableProperty().bind(read.disabledProperty().or(area.getSelectionModel().selectedItemProperty().isNotEqualTo(AreaType.DB)));
+        write.disableProperty().bind(read.disabledProperty().or(value.textProperty().isEmpty()));
+        dbfill.disableProperty().bind(write.disabledProperty().or(area.getSelectionModel().selectedItemProperty().isNotEqualTo(AreaType.DB)));
 
         area.disableProperty().bind(bindings.progressProperty());
         dataType.disableProperty().bind(bindings.progressProperty());
@@ -154,6 +164,33 @@ public class ReadViewPresenter implements Initializable {
                 .supply(() -> client.readArea(area.getSelectionModel().getSelectedItem(), Integer.valueOf(db.getText()), Integer.valueOf(start.getText()),
                         Integer.valueOf(amount.getText()), dataType.getSelectionModel().getSelectedItem(), buffer))
                 .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded((size) -> updateTable(size, time)).start();
+    }
+
+    @FXML
+    void dbget(ActionEvent event) {
+        Arrays.fill(buffer, (byte) 0);
+        long time = System.currentTimeMillis();
+        CompletableService.supply(() -> client.dbGet(Integer.valueOf(db.getText()), buffer)).bindRunning(bindings.progressProperty()).onFailed(this::report)
+                .onSucceeded((size) -> updateTable(size, time)).start();
+    }
+
+    @FXML
+    void dbfill(ActionEvent event) {
+        Alert alert = new Alert(AlertType.CONFIRMATION, "Are you sure you want to fill DB block " + db.getText() + "?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return;
+        }
+        Arrays.fill(buffer, (byte) 0);
+        try {
+            byte fill = (byte) (Integer.valueOf(value.getText()) & 0xFF);
+            Arrays.fill(buffer, fill);
+            long time = System.currentTimeMillis();
+            CompletableService.supply(() -> client.dbFill(Integer.valueOf(db.getText()), fill)).bindRunning(bindings.progressProperty()).onFailed(this::report)
+                    .onSucceeded((size) -> updateTable(size, time)).start();
+        } catch (Exception e) {
+            report(new Exception("parse " + value.getText() + " to byte failed", e));
+        }
     }
 
     @FXML

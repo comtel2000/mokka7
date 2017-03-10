@@ -31,7 +31,7 @@ import org.comtel2000.mokka7.util.ReturnCode;
  */
 public class S7MultiVar implements ReturnCode, AutoCloseable {
 
-    private S7Client client;
+    private final S7Client client;
     private int count = 0;
 
     private final S7DataItem[] items = new S7DataItem[S7Client.MAX_VARS];
@@ -40,7 +40,7 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
         this.client = client;
     }
 
-    private S7DataItem adjustWordLength(AreaType area, int db, int start, int amount, DataType type) {
+    private static S7DataItem adjustWordLength(AreaType area, int db, int start, int amount, DataType type) {
         int wordSize = DataType.getByteLength(type);
         if (wordSize == 0) {
             return null;
@@ -80,7 +80,7 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
     }
 
     public boolean add(AreaType area, int db, int start, int amount, DataType type, byte[] data) {
-        if (count >= S7Client.MAX_VARS) {
+        if (count >= items.length) {
             return false;
         }
         S7DataItem item = adjustWordLength(area, db, start, amount, type);
@@ -95,7 +95,7 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
     }
 
     public boolean add(S7DataItem item) {
-        if (count >= S7Client.MAX_VARS) {
+        if (count >= items.length) {
             return false;
         }
         items[count] = item;
@@ -104,7 +104,7 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
     }
 
     public boolean add(S7DataItem[] data) {
-        if (count >= S7Client.MAX_VARS || count + data.length >= S7Client.MAX_VARS) {
+        if (count >= items.length || count + data.length >= items.length) {
             return false;
         }
         for (S7DataItem item : data) {

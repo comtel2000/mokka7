@@ -27,10 +27,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.comtel2000.mokka7.block.BlockType;
 import org.comtel2000.mokka7.block.PlcCpuStatus;
 import org.comtel2000.mokka7.block.S7BlockInfo;
+import org.comtel2000.mokka7.block.S7BlockList;
 import org.comtel2000.mokka7.block.S7CpInfo;
 import org.comtel2000.mokka7.block.S7CpuInfo;
 import org.comtel2000.mokka7.block.S7DataItem;
@@ -55,239 +57,15 @@ public class S7Client implements Client, ReturnCode {
 
     private static final Logger logger = LoggerFactory.getLogger(S7Client.class);
 
-    /** Max number of vars (multiread/write) -> max PDU size */
-    public static final int MAX_VARS = 20;
-
-    /** Result transport size */
-    protected static final byte TS_RESBIT = 0x03;
-    protected static final byte TS_RESBYTE = 0x04;
-    protected static final byte TS_RESINT = 0x05;
-    protected static final byte TS_RESREAL = 0x07;
-    protected static final byte TS_RESOCTET = 0x09;
-
-    private static final int DEFAULT_PDU_SIZE_REQUESTED = 480;
-
-    private static final int SIZE_RD = 31;
-    private static final int SIZE_WR = 35;
-
-    /** default ISO tcp port */
-    private static final int ISO_TCP = 102;
-
-    /** TPKT+COTP Header Size */
-    private static final int ISO_HEADER_SIZE = 7;
-
-    private static final int MAX_PDU_SIZE = DEFAULT_PDU_SIZE_REQUESTED + ISO_HEADER_SIZE;
-
-    private static final int MIN_PDU_SIZE = 16;
-
-    /** TPKT + ISO COTP Header (Connection Oriented Transport Protocol) */
-    private static final byte[] TPKT_ISO = { // 7 bytes
-            0x03, 0x00, 0x00, 0x1f, // Telegram Length (Data Size + 31 or 35)
-            0x02, (byte) 0xf0, (byte) 0x80 // COTP (see above for info)
-    };
-
-    /** Telegrams ISO Connection Request telegram (contains also ISO Header and COTP Header) */
-    private static final byte ISO_CR[] = {
-            // TPKT (RFC1006 Header)
-            (byte) 0x03, // RFC 1006 ID (3)
-            (byte) 0x00, // Reserved, always 0
-            (byte) 0x00, // High part of packet lenght (entire frame, payload and TPDU included)
-            (byte) 0x16, // Low part of packet lenght (entire frame, payload and TPDU included)
-            // COTP (ISO 8073 Header)
-            (byte) 0x11, // PDU Size length
-            (byte) 0xE0, // CR - Connection Request ID
-            (byte) 0x00, // Dst Reference HI
-            (byte) 0x00, // Dst Reference LO
-            (byte) 0x00, // Src Reference HI
-            (byte) 0x01, // Src Reference LO
-            (byte) 0x00, // Class + Options Flags
-            (byte) 0xC0, // PDU Max length ID
-            (byte) 0x01, // PDU Max length HI
-            (byte) 0x0A, // PDU Max length LO
-            (byte) 0xC1, // Src TSAP Identifier
-            (byte) 0x02, // Src TSAP length (2 bytes)
-            (byte) 0x01, // Src TSAP HI (will be overwritten)
-            (byte) 0x00, // Src TSAP LO (will be overwritten)
-            (byte) 0xC2, // Dst TSAP Identifier
-            (byte) 0x02, // Dst TSAP length (2 bytes)
-            (byte) 0x01, // Dst TSAP HI (will be overwritten)
-            (byte) 0x02 // Dst TSAP LO (will be overwritten)
-    };
-
-    /** S7 get Block Info Request Header (contains also ISO Header and COTP Header) */
-    private static final byte S7_BI[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x25, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x07,
-            (byte) 0x00, (byte) 0x00, (byte) 0x05, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x01, (byte) 0x12,
-            (byte) 0x04, (byte) 0x11, (byte) 0x43, (byte) 0x03, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x08, (byte) 0x30, (byte) 0x41,
-            // Block Type
-            (byte) 0x30, (byte) 0x30, (byte) 0x30, (byte) 0x30, (byte) 0x30,
-            // ASCII Block Number
-            (byte) 0x41 };
-
-    /** S7 Clear Session Password */
-    private static final byte S7_CLR_PWD[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x1d, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x29, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01,
-            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x45, (byte) 0x02, (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
-
-    /** S7 COLD start request */
-    private static final byte S7_COLD_START[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x27, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x0f, (byte) 0x00, (byte) 0x00, (byte) 0x16, (byte) 0x00, (byte) 0x00, (byte) 0x28, (byte) 0x00,
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xfd, (byte) 0x00, (byte) 0x02, (byte) 0x43, (byte) 0x20, (byte) 0x09,
-            (byte) 0x50, (byte) 0x5f, (byte) 0x50, (byte) 0x52, (byte) 0x4f, (byte) 0x47, (byte) 0x52, (byte) 0x41, (byte) 0x4d };
-
-    /** get Date/Time request */
-    private static final byte S7_GET_DT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x1d, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x38, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01,
-            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x47, (byte) 0x01, (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
-
-    /** S7 get PLC Status */
-    private static final byte S7_GET_STAT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x2c, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x01,
-            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x44, (byte) 0x01, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x04, (byte) 0x04,
-            (byte) 0x24, (byte) 0x00, (byte) 0x00 };
-
-    /** S7 HOT start request */
-    private static final byte S7_HOT_START[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x25, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x00, (byte) 0x14, (byte) 0x00, (byte) 0x00, (byte) 0x28, (byte) 0x00,
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xfd, (byte) 0x00, (byte) 0x00, (byte) 0x09, (byte) 0x50, (byte) 0x5f,
-            (byte) 0x50, (byte) 0x52, (byte) 0x4f, (byte) 0x47, (byte) 0x52, (byte) 0x41, (byte) 0x4d };
-
-    /** S7 PDU Negotiation Telegram (contains also ISO Header and COTP Header) */
-    private static final byte S7_PN[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x19, (byte) 0x02, (byte) 0xf0,
-
-            (byte) 0x80, // TPKT + COTP (see above for info)
-
-            (byte) 0x32, (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0xf0,
-            (byte) 0x00, (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x01, (byte) 0x00,
-
-            (byte) 0x1e // PDU length Requested = HI-LO 480 bytes
-    };
-
-    /** S7 Read/Write Request Header (contains also ISO Header and COTP Header) */
-    private static final byte S7_RW[] = { // 31-35 bytes
-            (byte) 0x03, (byte) 0x00, (byte) 0x00,
-
-            (byte) 0x1f, // Telegram length (Data Size + 31 or 35)
-            (byte) 0x02, (byte) 0xf0, (byte) 0x80, // COTP (see above for info)
-            (byte) 0x32, // S7 Protocol ID
-            (byte) 0x01, // Job Type
-            (byte) 0x00, (byte) 0x00, // Redundancy identification
-            (byte) 0x05, (byte) 0x00, // PDU Reference
-            (byte) 0x00, (byte) 0x0e, // Parameters length
-            (byte) 0x00, (byte) 0x00, // Data length = Size(bytes) + 4
-            (byte) 0x04, // Function 4 Read Var, 5 Write Var
-            (byte) 0x01, // Items count
-            (byte) 0x12, // Var spec.
-            (byte) 0x0a, // length of remaining bytes
-            (byte) 0x10, // Syntax ID
-            DataType.BYTE.getValue(), // Transport Size
-            (byte) 0x00, (byte) 0x00, // Num Elements
-            (byte) 0x00, (byte) 0x00, // DB Number (if any, else 0)
-            (byte) 0x84, // area Type
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, // area offset
-            // WR area
-            (byte) 0x00, // Reserved
-            (byte) 0x04, // Transport size
-            (byte) 0x00, (byte) 0x00, // Data length * 8 (if not timer or counter)
-    };
-
-    /** get Date/Time command */
-    private static final byte S7_SET_DT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x27, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x89, (byte) 0x03, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0e, (byte) 0x00, (byte) 0x01,
-            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x47, (byte) 0x02, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x0a, (byte) 0x00,
-
-            (byte) 0x19, // Hi part of Year
-            (byte) 0x13, // Lo part of Year
-            (byte) 0x12, // Month
-            (byte) 0x06, // Day
-            (byte) 0x17, // Hour
-            (byte) 0x37, // Min
-            (byte) 0x13, // Sec
-            (byte) 0x00, (byte) 0x01 // ms + Day of week
-    };
-
-    /** S7 Set Session Password */
-    private static final byte S7_SET_PWD[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x25, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x27, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x01,
-            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x45, (byte) 0x01, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x08,
-            // 8 Char Encoded Password
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
-
-    /** S7 STOP request */
-    private static final byte S7_STOP[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x01,
-            (byte) 0x00, (byte) 0x00, (byte) 0x0e, (byte) 0x00, (byte) 0x00, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x29, (byte) 0x00, (byte) 0x00,
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x09, (byte) 0x50, (byte) 0x5f, (byte) 0x50, (byte) 0x52, (byte) 0x4f, (byte) 0x47, (byte) 0x52,
-            (byte) 0x41, (byte) 0x4d };
-    /** SZL First telegram request */
-    private static final byte S7_SZL_FIRST[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x05, (byte) 0x00, // Sequence out
-            (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x01, (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x44, (byte) 0x01,
-            (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, // ID
-                                                                                                       // (29)
-            (byte) 0x00, (byte) 0x00 // Index (31)
-    };
-    /** SZL Next telegram request */
-    private static final byte S7_SZL_NEXT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
-            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x06, (byte) 0x00, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01,
-            (byte) 0x12, (byte) 0x08, (byte) 0x12, (byte) 0x44, (byte) 0x01, (byte) 0x01, // Sequence
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
-
-    // S7 Variable MultiRead Header
-    private static final byte[] S7_MRD_HEADER = { 0x03, 0x00, 0x00, 0x1f, // Telegram length
-            0x02, (byte) 0xf0, (byte) 0x80, // COTP (see above for info)
-            0x32, // S7 Protocol ID
-            0x01, // Job Type
-            0x00, 0x00, // Redundancy identification
-            0x05, 0x00, // PDU Reference
-            0x00, 0x0e, // Parameters length
-            0x00, 0x00, // Data length = Size(bytes) + 4
-            0x04, // Function 4 Read Var, 5 Write Var
-            0x01 // Items count (idx 18)
-    };
-
-    // S7 Variable MultiRead Item
-    private static final byte[] S7_MRD_ITEM = { 0x12, // Var spec.
-            0x0a, // length of remaining bytes
-            0x10, // Syntax ID
-            DataType.BYTE.getValue(), // Transport Size idx=3
-            0x00, 0x00, // Num Elements
-            0x00, 0x00, // DB Number (if any, else 0)
-            (byte) 0x84, // area Type
-            0x00, 0x00, 0x00 // area offset
-    };
-
-    // S7 Variable MultiWrite Header
-    private static final byte[] S7_MWR_HEADER = { 0x03, 0x00, 0x00, 0x1f, // Telegram length
-            0x02, (byte) 0xf0, (byte) 0x80, // COTP (see above for info)
-            0x32, // S7 Protocol ID
-            0x01, // Job Type
-            0x00, 0x00, // Redundancy identification
-            0x05, 0x00, // PDU Reference
-            0x00, 0x0e, // Parameters length (idx 13)
-            0x00, 0x00, // Data length = Size(bytes) + 4 (idx 15)
-            0x05, // Function 5 Write Var
-            0x01 // Items count (idx 18)
-    };
-
-    // S7 Variable MultiWrite Item (Param)
-    private static final byte[] S7_MWR_PARAM = { 0x12, // Var spec.
-            0x0a, // length of remaining bytes
-            0x10, // Syntax ID
-            DataType.BYTE.getValue(), // Transport Size idx=3
-            0x00, 0x00, // Num Elements
-            0x00, 0x00, // DB Number (if any, else 0)
-            (byte) 0x84, // area Type
-            0x00, 0x00, 0x00, // area offset
-    };
-
     private int pduLength = 0;
 
+    private boolean connected = false;
 
-    public boolean connected = false;
     private ConnectionType connType = ConnectionType.PG;
 
     private Socket tcpSocket;
-    private BufferedInputStream inStream = null;
-    private OutputStream outStream = null;
+    private BufferedInputStream inStream;
+    private OutputStream outStream;
 
     private String ipAddress;
 
@@ -299,10 +77,21 @@ public class S7Client implements Client, ReturnCode {
 
     private final byte[] pdu = new byte[2048];
 
-    public int recvTimeout = 2000;
+    private int recvTimeout = RECV_TIMEOUT;
+    private int tcpPort = ISO_TCP;
+
+    private final int MAX_INC_COUNT = 65535;
+    private final AtomicInteger counter = new AtomicInteger(-1);
 
     public S7Client() {
         Arrays.fill(buffer, (byte) 0);
+    }
+
+    private int incrementAndGet() {
+        if (counter.compareAndSet(MAX_INC_COUNT, -1)) {
+            return 0;
+        }
+        return counter.incrementAndGet();
     }
 
     @Override
@@ -352,6 +141,23 @@ public class S7Client implements Client, ReturnCode {
     @Override
     public boolean isConnected() {
         return connected;
+    }
+
+
+    public int getTcpPort() {
+        return tcpPort;
+    }
+
+    public void setTcpPort(int tcpPort) {
+        this.tcpPort = tcpPort;
+    }
+
+    public int getRecvTimeout() {
+        return recvTimeout;
+    }
+
+    public void setRecvTimeout(int recvTimeout) {
+        this.recvTimeout = recvTimeout;
     }
 
     @Override
@@ -409,12 +215,32 @@ public class S7Client implements Client, ReturnCode {
 
         if (sendPacket(S7_BI)) {
             int length = recvIsoPacket();
-            if (length < 33) {
+            if (length < 28) {
                 throw buildException(ISO_INVALID_PDU);
             }
-            if ((S7.getWordAt(pdu, 27) == 0)) {
-                return S7BlockInfo.of(pdu, 42);
+            if (S7.getWordAt(pdu, 27) != 0) {
+                throw buildException(S7.getWordAt(pdu, 27));
             }
+            return S7BlockInfo.of(pdu, 42);
+        }
+        throw buildException(S7_FUNCTION_ERROR);
+    }
+
+    @Override
+    public S7BlockList getS7BlockList() throws S7Exception {
+
+        S7.setSwapWordAt(S7_BL, 11, incrementAndGet());
+        S7.hexDump(S7_BL, System.err::println);
+        if (sendPacket(S7_BL)) {
+            int length = recvIsoPacket();
+            S7.hexDump(pdu, 8, System.out::println);
+            if (length < 28) {
+                throw buildException(ISO_INVALID_PDU);
+            }
+            if (S7.getWordAt(pdu, 27) != 0) {
+                throw buildException(S7.getWordAt(pdu, 27));
+            }
+            return S7BlockList.of(pdu, 33);
         }
         throw buildException(S7_FUNCTION_ERROR);
     }
@@ -444,7 +270,12 @@ public class S7Client implements Client, ReturnCode {
             if (length < 31) {
                 throw buildException(ISO_INVALID_PDU);
             }
-            if ((S7.getWordAt(pdu, 27) == 0) && (pdu[29] == (byte) 0xff)) {
+
+            if (S7.getWordAt(pdu, 27) != 0) {
+                throw buildException(S7.getWordAt(pdu, 27));
+            }
+
+            if (pdu[29] == (byte) 0xff) {
                 return S7.getDateTimeAt(pdu, 35);
             }
         }
@@ -484,9 +315,13 @@ public class S7Client implements Client, ReturnCode {
             // gets the reply (if any)
             int length = recvIsoPacket();
             if (length != 22) {
+                logger.warn("invalid PDU length: {} ({})", length, 22);
+                if (length == 33){
+                    return true;
+                }
                 throw buildException(ISO_INVALID_PDU);
             }
-            if (lastPDUType == (byte) 0xD0) {
+            if (lastPDUType == (byte) 0xd0) {
                 return true;
             }
         }
@@ -503,7 +338,7 @@ public class S7Client implements Client, ReturnCode {
                 throw buildException(ISO_NEGOTIATING_PDU);
             }
             // check S7 Error: 20 = size of Negotiate Answer
-            if (pdu[17] != (byte) 0 || pdu[18] != (byte) 0) {
+            if (pdu[17] != (byte) 0x00 || pdu[18] != (byte) 0x00) {
                 throw buildException(ISO_NEGOTIATING_PDU);
             }
             pduLength = S7.getWordAt(pdu, 25);
@@ -723,9 +558,8 @@ public class S7Client implements Client, ReturnCode {
             }
 
             System.arraycopy(items[c].data, 0, dataItem, 4, itemDataSize);
-            // Marshal.Copy(items[c].pData, S7DataItem, 4, itemDataSize);
             if (itemDataSize % 2 != 0) {
-                dataItem[itemDataSize + 4] = 0x00;
+                dataItem[itemDataSize + 4] = (byte) 0x00;
                 itemDataSize++;
             }
             System.arraycopy(dataItem, 0, pdu, offset, itemDataSize + 4);
@@ -755,7 +589,7 @@ public class S7Client implements Client, ReturnCode {
         }
 
         for (int c = 0; c < itemsCount; c++) {
-            if (pdu[c + 21] == 0xff) {
+            if (pdu[c + 21] == (byte) 0xff) {
                 items[c].result = 0;
             } else {
                 items[c].result = ReturnCode.getCpuError(pdu[c + 21]);
@@ -893,7 +727,7 @@ public class S7Client implements Client, ReturnCode {
                 // gets amount of this slice
                 // Skips extra params (ID, Index ...)
                 dataSZL = S7.getWordAt(pdu, 31) - 8;
-                done = pdu[26] == 0x00;
+                done = pdu[26] == (byte) 0x00;
                 seq_in = pdu[24]; // Slice sequence
 
                 szl.lenthdr = S7.getWordAt(pdu, 37);
@@ -904,7 +738,7 @@ public class S7Client implements Client, ReturnCode {
             } else {
                 // gets amount of this slice
                 dataSZL = S7.getWordAt(pdu, 31);
-                done = pdu[26] == 0x00;
+                done = pdu[26] == (byte) 0x00;
                 seq_in = pdu[24]; // Slice sequence
                 szl.copy(pdu, 37, offset, dataSZL);
                 offset += dataSZL;
@@ -1061,7 +895,7 @@ public class S7Client implements Client, ReturnCode {
     private boolean openTcpConnect() throws S7Exception {
         try {
             tcpSocket = new Socket();
-            tcpSocket.connect(new InetSocketAddress(ipAddress, ISO_TCP), 5000);
+            tcpSocket.connect(new InetSocketAddress(ipAddress, tcpPort), 5000);
             tcpSocket.setTcpNoDelay(true);
             tcpSocket.setSoTimeout(recvTimeout);
             inStream = new BufferedInputStream(tcpSocket.getInputStream());
@@ -1167,7 +1001,8 @@ public class S7Client implements Client, ReturnCode {
                     pdu[32] = TS_RESOCTET;
                     break;
                 default:
-                    pdu[32] = TS_RESBYTE; // byte/word/dword etc.
+                    // byte/word/dword/real/char converted to byte[] etc.
+                    pdu[32] = TS_RESBYTE;
                     break;
             };
             // length

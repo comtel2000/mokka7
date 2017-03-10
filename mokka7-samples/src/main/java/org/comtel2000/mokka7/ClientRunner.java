@@ -16,8 +16,8 @@
  */
 package org.comtel2000.mokka7;
 
+import java.time.Duration;
 import java.util.BitSet;
-import java.util.concurrent.TimeUnit;
 
 import org.comtel2000.mokka7.block.S7CpInfo;
 import org.comtel2000.mokka7.block.S7OrderCode;
@@ -34,7 +34,7 @@ public abstract class ClientRunner {
 
     private static final String host = "127.0.0.1";
     private static final int rack = 0;
-    private static final int slot = 0;
+    private static final int slot = 2;
 
     public ClientRunner() {
         this(host, rack, slot);
@@ -42,7 +42,7 @@ public abstract class ClientRunner {
 
     public ClientRunner(String host, int rack, int slot) {
         MonitoredS7Client client = new MonitoredS7Client();
-        client.start(10, TimeUnit.SECONDS);
+        client.start(Duration.ofSeconds(10));
         long time = System.currentTimeMillis();
         try {
             if (client.connect(host, rack, slot)) {

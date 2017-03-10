@@ -191,7 +191,7 @@
                         <Insets left="10.0" />
                      </padding>
                   </Label>
-                  <Label text="Max PSU size (bytes)" textFill="#403f3f" GridPane.rowIndex="12">
+                  <Label text="Max PDU size (bytes)" textFill="#403f3f" GridPane.rowIndex="12">
                      <font>
                         <Font name="System Bold" size="10.0" />
                      </font>

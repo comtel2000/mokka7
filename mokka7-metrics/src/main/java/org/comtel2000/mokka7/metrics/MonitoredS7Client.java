@@ -17,6 +17,7 @@
 package org.comtel2000.mokka7.metrics;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.comtel2000.mokka7.S7Client;
@@ -63,11 +64,10 @@ public class MonitoredS7Client extends S7Client implements Closeable {
     /**
      * @see Slf4jReporter#start(long, TimeUnit)
      *
-     * @param period the amount of time between polls
-     * @param unit the unit for period
+     * @param time the amount of time between polls
      */
-    public void start(long period, TimeUnit unit) {
-        reporter.start(period, unit);
+    public void start(Duration time) {
+        reporter.start(time.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     /**

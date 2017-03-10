@@ -105,7 +105,7 @@ public interface ReturnCode {
         try {
             return bundle.getString(BUNDLE_ERR_PREFIX + Integer.toHexString(errorCode));
         } catch (Exception e) {
-            return "Unknown error: 0x" + Integer.toHexString(errorCode);
+            return String.format("error code: [0x%s]", Integer.toHexString(errorCode));
         }
     }
 

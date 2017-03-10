@@ -389,7 +389,8 @@ public class ClientDemo {
     }
 
     public static void main(String[] args) throws IOException {
-        args[0] = "127.0.0.1";
+        args[0] = "192.168.178.25";
+        slot = 2;
         if ((args.length != 1) && (args.length != 3)) {
             usage();
             return;

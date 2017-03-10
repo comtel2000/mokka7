@@ -54,4 +54,13 @@ public enum BlockSubType {
     public byte getValue() {
         return value;
     }
+
+    public static BlockSubType of(byte v){
+        for (BlockSubType type : values()){
+            if (type.value == v){
+                return type;
+            }
+        }
+        return null;
+    }
 }

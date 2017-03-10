@@ -30,7 +30,6 @@ import org.comtel2000.mokka7.client.service.CompletableService;
 import org.comtel2000.mokka7.client.service.PingWatchdogService;
 import org.comtel2000.mokka7.client.service.SessionManager;
 import org.comtel2000.mokka7.metrics.MonitoredS7Client;
-import org.comtel2000.mokka7.type.AreaType;
 import org.slf4j.LoggerFactory;
 
 import javafx.application.Platform;
@@ -134,7 +133,7 @@ public class ConnectViewPresenter implements Initializable {
         CompletableService.supply(() -> {
             client.disconnect();
             return true;
-        }).bindRunning(bindings.progressProperty()).onComplete((b, th) -> bindings.connectedProperty().set(client.connected)).start();
+        }).bindRunning(bindings.progressProperty()).onComplete((b, th) -> bindings.connectedProperty().set(client.isConnected())).start();
     }
 
 
@@ -181,9 +180,6 @@ public class ConnectViewPresenter implements Initializable {
             label4.setText("Max Con: " + info.maxConnections);
             label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
         }
-
-        CompletableService.supply(() -> client.readBytes(AreaType.DB, 200, 0, 64)).bindRunning(bindings.progressProperty()).onFailed(this::report)
-                .onSucceeded(bindings.hexDataProperty()::set).start();
     }
 
     private void reset() {

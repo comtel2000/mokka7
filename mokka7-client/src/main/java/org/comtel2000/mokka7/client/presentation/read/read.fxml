@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
 <BorderPane fx:id="pane" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.mokka7.client.presentation.read.ReadViewPresenter">
    <right>
@@ -18,33 +19,48 @@
          <content>
             <VBox minWidth="100.0" prefWidth="200.0" spacing="5.0">
                <children>
-                  <Label text="Area" />
+                  <Label text="Area" textFill="#575757">
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font></Label>
                   <ComboBox fx:id="area" maxWidth="1.7976931348623157E308" promptText="Area" />
-                  <Label text="DB Number">
+                  <Label text="DB Number" textFill="#575757">
                      <padding>
                         <Insets top="10.0" />
                      </padding>
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
                   </Label>
                   <TextField fx:id="db" maxWidth="1.7976931348623157E308" promptText="DB" />
-                  <Label text="Start">
+                  <Label text="Start" textFill="#575757">
                      <padding>
                         <Insets top="10.0" />
                      </padding>
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
                   </Label>
                   <TextField fx:id="start" maxWidth="1.7976931348623157E308" promptText="Start" />
-                  <Label text="Amount">
+                  <Label text="Amount" textFill="#575757">
                      <padding>
                         <Insets top="10.0" />
                      </padding>
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
                   </Label>
                   <TextField fx:id="amount" maxWidth="1.7976931348623157E308" promptText="Amount" />
-                  <Label text="DataType">
+                  <Label text="DataType" textFill="#575757">
                      <padding>
                         <Insets top="10.0" />
                      </padding>
                      <VBox.margin>
                         <Insets />
                      </VBox.margin>
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
                   </Label>
                   <ComboBox fx:id="dataType" maxWidth="1.7976931348623157E308" promptText="DataType" />
                   <Button fx:id="read" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#read" text="Read">
@@ -52,13 +68,22 @@
                         <Insets top="30.0" />
                      </VBox.margin>
                   </Button>
-                  <Label text="Value">
+                  <Button fx:id="dbget" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#dbget" text="DB GET (read all)" />
+                  <Label text="Value" textFill="#575757">
                      <padding>
                         <Insets top="10.0" />
                      </padding>
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
                   </Label>
                   <TextField fx:id="value" maxWidth="1.7976931348623157E308" promptText="Value" />
-                  <Button fx:id="write" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#write" text="Write" />
+                  <Button fx:id="write" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#write" text="Write">
+                     <VBox.margin>
+                        <Insets top="10.0" />
+                     </VBox.margin>
+                  </Button>
+                  <Button fx:id="dbfill" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#dbfill" text="DB FILL (write all)" />
                </children>
                <padding>
                   <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />

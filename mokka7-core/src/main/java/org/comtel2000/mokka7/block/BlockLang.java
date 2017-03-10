@@ -45,4 +45,13 @@ public enum BlockLang {
     public byte getValue() {
         return value;
     }
+
+    public static BlockLang of(byte v){
+        for (BlockLang type : values()){
+            if (type.value == v){
+                return type;
+            }
+        }
+        return null;
+    }
 }

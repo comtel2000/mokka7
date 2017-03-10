@@ -38,7 +38,7 @@ public class S7 {
     private static final byte[] BIT_MASK = { (byte) 0x01, (byte) 0x02, (byte) 0x04, (byte) 0x08, (byte) 0x10, (byte) 0x20, (byte) 0x40, (byte) 0x80 };
 
     private final static char EMP_CHAR = '\u0020', DOT_CHAR = '.';
-    private final static char HEX_DIGIT[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+    private final static char HEX_DIGIT[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
     public static int bcdToByte(byte b) {
         return ((b >> 4) * 10) + (b & 0x0F);
@@ -154,6 +154,10 @@ public class S7 {
 
     public static byte getByteAt(byte[] buffer, int pos) {
         return buffer[pos];
+    }
+
+    public static int getUnsignedIntAt(byte[] buffer, int pos) {
+        return Byte.toUnsignedInt(buffer[pos]);
     }
 
     /**
@@ -272,6 +276,11 @@ public class S7 {
         setShortAt(buffer, pos, (short) value);
     }
 
+    public static void setSwapWordAt(byte[] buffer, int pos, int value) {
+        buffer[pos + 1] = (byte) (value >> 8);
+        buffer[pos] = (byte) (value & 0x00FF);
+    }
+
     public static void setByteAt(byte[] buffer, int pos, byte b) {
         buffer[pos] = b;
     }
@@ -316,7 +325,7 @@ public class S7 {
                 return;
             }
             sb.setLength(0);
-            for (int i = 28; i >= 0; i -= 4) {
+            for (int i = 12; i >= 0; i -= 4) {
                 sb.append(HEX_DIGIT[0x0F & line >>> i]);
             }
             sb.append('0').append(':').append(EMP_CHAR).append(EMP_CHAR);

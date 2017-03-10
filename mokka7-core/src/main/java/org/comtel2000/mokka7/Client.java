@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.comtel2000.mokka7.block.BlockType;
 import org.comtel2000.mokka7.block.PlcCpuStatus;
 import org.comtel2000.mokka7.block.S7BlockInfo;
+import org.comtel2000.mokka7.block.S7BlockList;
 import org.comtel2000.mokka7.block.S7CpInfo;
 import org.comtel2000.mokka7.block.S7CpuInfo;
 import org.comtel2000.mokka7.block.S7DataItem;
@@ -45,6 +46,246 @@ import org.comtel2000.mokka7.util.S7;
 public interface Client {
 
     final byte[] buffer = new byte[1024];
+
+    /** Max number of vars (multiread/write) -> max PDU size */
+    public static final int MAX_VARS = 20;
+
+    /** Result transport size */
+    static final byte TS_RESBIT = 0x03;
+    static final byte TS_RESBYTE = 0x04;
+    static final byte TS_RESINT = 0x05;
+    static final byte TS_RESREAL = 0x07;
+    static final byte TS_RESOCTET = 0x09;
+
+    static final int DEFAULT_PDU_SIZE_REQUESTED = 480;
+
+    static final int SIZE_RD = 31;
+    static final int SIZE_WR = 35;
+
+    /** default TCP receive timeout in ms */
+    static final int RECV_TIMEOUT = 2000;
+
+    /** default ISO tcp port */
+    static final int ISO_TCP = 102;
+
+    /** TPKT+COTP Header Size */
+    static final int ISO_HEADER_SIZE = 7;
+
+    static final int MAX_PDU_SIZE = DEFAULT_PDU_SIZE_REQUESTED + ISO_HEADER_SIZE;
+
+    static final int MIN_PDU_SIZE = 16;
+
+    /** TPKT + ISO COTP Header (Connection Oriented Transport Protocol) */
+    static final byte[] TPKT_ISO = { // 7 bytes
+            0x03, 0x00, 0x00, 0x1f, // Telegram Length (Data Size + 31 or 35)
+            0x02, (byte) 0xf0, (byte) 0x80 // COTP (see above for info)
+    };
+
+    /** Telegrams ISO Connection Request telegram (contains also ISO Header and COTP Header) */
+    static final byte ISO_CR[] = {
+            // TPKT (RFC1006 Header)
+            (byte) 0x03, // RFC 1006 ID (3)
+            (byte) 0x00, // Reserved, always 0
+            (byte) 0x00, // High part of packet lenght (entire frame, payload and TPDU included)
+            (byte) 0x16, // Low part of packet lenght (entire frame, payload and TPDU included)
+            // COTP (ISO 8073 Header)
+            (byte) 0x11, // PDU Size length
+            (byte) 0xE0, // CR - Connection Request ID
+            (byte) 0x00, // Dst Reference HI
+            (byte) 0x00, // Dst Reference LO
+            (byte) 0x00, // Src Reference HI
+            (byte) 0x01, // Src Reference LO
+            (byte) 0x00, // Class + Options Flags
+            (byte) 0xC0, // PDU Max length ID
+            (byte) 0x01, // PDU Max length HI
+            (byte) 0x0A, // PDU Max length LO
+            (byte) 0xC1, // Src TSAP Identifier
+            (byte) 0x02, // Src TSAP length (2 bytes)
+            (byte) 0x01, // Src TSAP HI (will be overwritten)
+            (byte) 0x00, // Src TSAP LO (will be overwritten)
+            (byte) 0xC2, // Dst TSAP Identifier
+            (byte) 0x02, // Dst TSAP length (2 bytes)
+            (byte) 0x01, // Dst TSAP HI (will be overwritten)
+            (byte) 0x02 // Dst TSAP LO (will be overwritten)
+    };
+
+    /** S7 get Block Info Request Header (contains also ISO Header and COTP Header) */
+    static final byte S7_BI[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x25, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x07,
+            (byte) 0x00, (byte) 0x00, (byte) 0x05, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x01, (byte) 0x12,
+            (byte) 0x04, (byte) 0x11, (byte) 0x43, (byte) 0x03, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x08, (byte) 0x30, (byte) 0x41,
+            // Block Type
+            (byte) 0x30, (byte) 0x30, (byte) 0x30, (byte) 0x30, (byte) 0x30,
+            // ASCII Block Number
+            (byte) 0x41 };
+
+    /** S7 Clear Session Password */
+    static final byte S7_CLR_PWD[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x1d, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x29, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01,
+            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x45, (byte) 0x02, (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
+
+    /** S7 COLD start request */
+    static final byte S7_COLD_START[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x27, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x0f, (byte) 0x00, (byte) 0x00, (byte) 0x16, (byte) 0x00, (byte) 0x00, (byte) 0x28, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xfd, (byte) 0x00, (byte) 0x02, (byte) 0x43, (byte) 0x20, (byte) 0x09,
+            (byte) 0x50, (byte) 0x5f, (byte) 0x50, (byte) 0x52, (byte) 0x4f, (byte) 0x47, (byte) 0x52, (byte) 0x41, (byte) 0x4d };
+
+    /** get Date/Time request */
+    static final byte S7_GET_DT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x1d, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x38, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01,
+            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x47, (byte) 0x01, (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
+
+    /** S7 get PLC Status */
+    static final byte S7_GET_STAT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x2c, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x01,
+            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x44, (byte) 0x01, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x04, (byte) 0x04,
+            (byte) 0x24, (byte) 0x00, (byte) 0x00 };
+
+    /** S7 HOT start request */
+    static final byte S7_HOT_START[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x25, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x00, (byte) 0x14, (byte) 0x00, (byte) 0x00, (byte) 0x28, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xfd, (byte) 0x00, (byte) 0x00, (byte) 0x09, (byte) 0x50, (byte) 0x5f,
+            (byte) 0x50, (byte) 0x52, (byte) 0x4f, (byte) 0x47, (byte) 0x52, (byte) 0x41, (byte) 0x4d };
+
+    /** S7 PDU Negotiation Telegram (contains also ISO Header and COTP Header) */
+    static final byte S7_PN[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x19, (byte) 0x02, (byte) 0xf0,
+
+            (byte) 0x80, // TPKT + COTP (see above for info)
+
+            (byte) 0x32, (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0xf0,
+            (byte) 0x00, (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x01, (byte) 0x00,
+
+            (byte) 0x1e // PDU length Requested = HI-LO 480 bytes
+    };
+
+    /** S7 Read/Write Request Header (contains also ISO Header and COTP Header) */
+    static final byte S7_RW[] = { // 31-35 bytes
+            (byte) 0x03, (byte) 0x00, (byte) 0x00,
+
+            (byte) 0x1f, // Telegram length (Data Size + 31 or 35)
+            (byte) 0x02, (byte) 0xf0, (byte) 0x80, // COTP (see above for info)
+            (byte) 0x32, // S7 Protocol ID
+            (byte) 0x01, // Job Type
+            (byte) 0x00, (byte) 0x00, // Redundancy identification
+            (byte) 0x05, (byte) 0x00, // PDU Reference
+            (byte) 0x00, (byte) 0x0e, // Parameters length
+            (byte) 0x00, (byte) 0x00, // Data length = Size(bytes) + 4
+            (byte) 0x04, // Function 4 Read Var, 5 Write Var
+            (byte) 0x01, // Items count
+            (byte) 0x12, // Var spec.
+            (byte) 0x0a, // length of remaining bytes
+            (byte) 0x10, // Syntax ID
+            DataType.BYTE.getValue(), // Transport Size
+            (byte) 0x00, (byte) 0x00, // Num Elements
+            (byte) 0x00, (byte) 0x00, // DB Number (if any, else 0)
+            (byte) 0x84, // area Type
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, // area offset
+            // WR area
+            (byte) 0x00, // Reserved
+            (byte) 0x04, // Transport size
+            (byte) 0x00, (byte) 0x00, // Data length * 8 (if not timer or counter)
+    };
+
+    /** get Date/Time command */
+    static final byte S7_SET_DT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x27, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x89, (byte) 0x03, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0e, (byte) 0x00, (byte) 0x01,
+            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x47, (byte) 0x02, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x0a, (byte) 0x00,
+
+            (byte) 0x19, // Hi part of Year
+            (byte) 0x13, // Lo part of Year
+            (byte) 0x12, // Month
+            (byte) 0x06, // Day
+            (byte) 0x17, // Hour
+            (byte) 0x37, // Min
+            (byte) 0x13, // Sec
+            (byte) 0x00, (byte) 0x01 // ms + Day of week
+    };
+
+    /** S7 Set Session Password */
+    static final byte S7_SET_PWD[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x25, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x27, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x01,
+            (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x45, (byte) 0x01, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x08,
+            // 8 Char Encoded Password
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
+
+    /** S7 STOP request */
+    static final byte S7_STOP[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x01,
+            (byte) 0x00, (byte) 0x00, (byte) 0x0e, (byte) 0x00, (byte) 0x00, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x29, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x09, (byte) 0x50, (byte) 0x5f, (byte) 0x50, (byte) 0x52, (byte) 0x4f, (byte) 0x47, (byte) 0x52,
+            (byte) 0x41, (byte) 0x4d };
+
+    /** SZL First telegram request */
+    static final byte S7_SZL_FIRST[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x05, (byte) 0x00, // Sequence out
+            (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x01, (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x44, (byte) 0x01,
+            (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, // ID
+                                                                                                       // (29)
+            (byte) 0x00, (byte) 0x00 // Index (31)
+    };
+
+    /** SZL Next telegram request */
+    static final byte S7_SZL_NEXT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32,
+            (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x06, (byte) 0x00, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01,
+            (byte) 0x12, (byte) 0x08, (byte) 0x12, (byte) 0x44, (byte) 0x01, (byte) 0x01, // Sequence
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
+
+    /** S7 Variable MultiRead Header */
+    static final byte[] S7_MRD_HEADER = { 0x03, 0x00, 0x00, 0x1f, // Telegram length
+            0x02, (byte) 0xf0, (byte) 0x80, // COTP (see above for info)
+            0x32, // S7 Protocol ID
+            0x01, // Job Type
+            0x00, 0x00, // Redundancy identification
+            0x05, 0x00, // PDU Reference
+            0x00, 0x0e, // Parameters length
+            0x00, 0x00, // Data length = Size(bytes) + 4
+            0x04, // Function 4 Read Var, 5 Write Var
+            0x01 // Items count (idx 18)
+    };
+
+    /** S7 Variable MultiRead Item */
+    static final byte[] S7_MRD_ITEM = { 0x12, // Var spec.
+            0x0a, // length of remaining bytes
+            0x10, // Syntax ID
+            DataType.BYTE.getValue(), // Transport Size idx=3
+            0x00, 0x00, // Num Elements
+            0x00, 0x00, // DB Number (if any, else 0)
+            (byte) 0x84, // area Type
+            0x00, 0x00, 0x00 // area offset
+    };
+
+    /** S7 Variable MultiWrite Header */
+    static final byte[] S7_MWR_HEADER = { 0x03, 0x00, 0x00, 0x1f, // Telegram length
+            0x02, (byte) 0xf0, (byte) 0x80, // COTP (see above for info)
+            0x32, // S7 Protocol ID
+            0x01, // Job Type
+            0x00, 0x00, // Redundancy identification
+            0x05, 0x00, // PDU Reference
+            0x00, 0x0e, // Parameters length (idx 13)
+            0x00, 0x00, // Data length = Size(bytes) + 4 (idx 15)
+            0x05, // Function 5 Write Var
+            0x01 // Items count (idx 18)
+    };
+
+    /** S7 Variable MultiWrite Item (Param) */
+    static final byte[] S7_MWR_PARAM = { 0x12, // Var spec.
+            0x0a, // length of remaining bytes
+            0x10, // Syntax ID
+            DataType.BYTE.getValue(), // Transport Size idx=3
+            0x00, 0x00, // Num Elements
+            0x00, 0x00, // DB Number (if any, else 0)
+            (byte) 0x84, // area Type
+            0x00, 0x00, 0x00, // area offset
+    };
+
+    /** S7 get Block List */
+    static final byte S7_BL[] = {
+            (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x1d, (byte) 0x02, (byte) 0xf0, (byte) 0x80,
+            (byte) 0x32, (byte) 0x07, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, //[11,12] message global increment
+            (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x04, (byte) 0x00,
+            (byte) 0x01, (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x43,
+            (byte) 0x01, (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00,
+             (byte) 0x00
+            };
 
     boolean clearSessionPassword() throws S7Exception;
 
@@ -160,6 +401,8 @@ public interface Client {
      */
     S7BlockInfo getAgBlockInfo(BlockType type, int blockNumber) throws S7Exception;
 
+    S7BlockList getS7BlockList() throws S7Exception;
+    
     S7CpInfo getCpInfo() throws S7Exception;
 
     S7CpuInfo getCpuInfo() throws S7Exception;
@@ -337,5 +580,7 @@ public interface Client {
     public int readArea(AreaType area, int db, int start, int amount, DataType wordLen, byte[] buffer) throws S7Exception;
 
     public boolean writeArea(AreaType area, int db, int start, int amount, DataType type, byte[] buffer) throws S7Exception;
+
+
 
 }

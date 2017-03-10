@@ -28,8 +28,6 @@ public class S7Timer {
     public boolean input;
     public boolean q;
 
-    public S7Timer() {}
-
     public static S7Timer of(byte[] buffer, int pos) {
         S7Timer timer = new S7Timer();
         timer.decode(buffer, pos);
