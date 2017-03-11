@@ -20,6 +20,7 @@
                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="156.0" minWidth="100.0" prefWidth="150.0" />
                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="200.0" minWidth="50.0" prefWidth="158.0" />
                   <ColumnConstraints hgrow="ALWAYS" maxWidth="95.0" minWidth="33.0" prefWidth="33.0" />
+                  <ColumnConstraints />
               </columnConstraints>
               <rowConstraints>
                 <RowConstraints minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />

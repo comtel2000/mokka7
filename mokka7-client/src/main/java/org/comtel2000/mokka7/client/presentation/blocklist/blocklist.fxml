@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.mokka7.client.presentation.blocklist.BlockListViewPresenter">
+   <center>
+      <ScrollPane fitToWidth="true" BorderPane.alignment="CENTER">
+         <content>
+            <GridPane>
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="50.0" minWidth="50.0" prefWidth="50.0" />
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="90.0" minWidth="50.0" prefWidth="70.0" />
+                  <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" minWidth="33.0" prefWidth="48.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+               <children>
+                  <Label text="BlockList" textFill="#403f3f" GridPane.columnSpan="2">
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                  </Label>
+                  <Label text="OB" textFill="#403f3f" GridPane.rowIndex="1">
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
+                  </Label>
+                  <Label text="FB" textFill="#403f3f" GridPane.rowIndex="2">
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="ob" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </TextField>
+                  <TextField fx:id="fc" editable="false" layoutX="110.0" layoutY="43.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </TextField>
+                  <Label text="FC" textFill="#403f3f" GridPane.rowIndex="3">
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
+                  </Label>
+                  <Label text="SFB" textFill="#403f3f" GridPane.rowIndex="4">
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
+                  </Label>
+                  <Label text="SFC" textFill="#403f3f" GridPane.rowIndex="5">
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
+                  </Label>
+                  <Label text="DB" textFill="#403f3f" GridPane.rowIndex="6">
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
+                  </Label>
+                  <Label text="SDB" textFill="#403f3f" GridPane.rowIndex="7">
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
+                  </Label>
+                  <TextField fx:id="sfb" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </TextField>
+                  <TextField fx:id="sdb" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="7">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </TextField>
+                  <TextField fx:id="db" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="6">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </TextField>
+                  <TextField fx:id="sfc" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </TextField>
+                  <TextField fx:id="fb" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </TextField>
+                  <Button fx:id="refresh" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#refresh" text="Refresh" GridPane.columnIndex="1" GridPane.rowIndex="9" />
+               </children>
+            </GridPane>
+         </content>
+         <padding>
+            <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
+         </padding>
+      </ScrollPane>
+   </center>
+</BorderPane>

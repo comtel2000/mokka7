@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import org.comtel2000.mokka7.block.S7CpInfo;
+import org.comtel2000.mokka7.block.S7CpuInfo;
 import org.comtel2000.mokka7.block.S7OrderCode;
 import org.comtel2000.mokka7.client.presentation.StatusBinding;
 import org.comtel2000.mokka7.client.service.CompletableService;
@@ -166,6 +167,7 @@ public class ConnectViewPresenter implements Initializable {
     }
 
     private void update(S7OrderCode code) {
+        bindings.orderCodeProperty().set(code);
         if (code != null) {
             label1.setText(code.getCode());
             label2.setText("v." + code.getFirmware());
@@ -174,12 +176,18 @@ public class ConnectViewPresenter implements Initializable {
     }
 
     private void update(S7CpInfo info) {
+        bindings.cpInfoProperty().set(info);
         logger.debug("{}", info);
         if (info != null) {
             label3.setText("Max PDU: " + info.maxPduLength);
             label4.setText("Max Con: " + info.maxConnections);
             label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
         }
+        CompletableService.supply(() -> client.getCpuInfo()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
+    }
+
+    private void update(S7CpuInfo info) {
+        bindings.cpuInfoProperty().set(info);
     }
 
     private void reset() {

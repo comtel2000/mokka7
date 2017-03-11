@@ -95,7 +95,7 @@ public class ReadViewPresenter implements Initializable {
     @FXML
     private Button dbfill;
 
-    private final byte[] buffer = new byte[16 * 32];
+    private final byte[] buffer = new byte[16 * 128];
 
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {

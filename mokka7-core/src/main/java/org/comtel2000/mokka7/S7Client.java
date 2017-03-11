@@ -167,6 +167,7 @@ public class S7Client implements Client, ReturnCode {
             int sizeToRead = block.mc7Size;
             // Checks the room
             if (sizeToRead > buffer.length) {
+                logger.error("buffer size to small ({}/{})", sizeToRead, buffer.length);
                 throw buildException(S7_BUFFER_TOO_SMALL);
             }
             if (readArea(AreaType.DB, db, 0, sizeToRead, DataType.BYTE, buffer) > 0) {
@@ -230,10 +231,8 @@ public class S7Client implements Client, ReturnCode {
     public S7BlockList getS7BlockList() throws S7Exception {
 
         S7.setSwapWordAt(S7_BL, 11, incrementAndGet());
-        S7.hexDump(S7_BL, System.err::println);
         if (sendPacket(S7_BL)) {
             int length = recvIsoPacket();
-            S7.hexDump(pdu, 8, System.out::println);
             if (length < 28) {
                 throw buildException(ISO_INVALID_PDU);
             }

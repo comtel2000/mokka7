@@ -102,7 +102,7 @@ public class HexTableView extends TableView<Integer> {
             return null;
         }
 
-        for (int i = 28; i >= 0; i -= 4) {
+        for (int i = 16; i >= 0; i -= 4) {
             sb.append(HEX_DIGIT[0x0F & value >>> i]);
         }
         sb.append('0').append(':').append(EMP_CHAR).append(EMP_CHAR);

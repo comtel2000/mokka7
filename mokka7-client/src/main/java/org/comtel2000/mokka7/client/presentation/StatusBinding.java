@@ -16,6 +16,10 @@
  */
 package org.comtel2000.mokka7.client.presentation;
 
+import org.comtel2000.mokka7.block.S7CpInfo;
+import org.comtel2000.mokka7.block.S7CpuInfo;
+import org.comtel2000.mokka7.block.S7OrderCode;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -30,6 +34,10 @@ public class StatusBinding {
     private final StringProperty statusText = new SimpleStringProperty("");
 
     private final ObjectProperty<byte[]> hexData = new SimpleObjectProperty<>();
+    private final ObjectProperty<S7OrderCode> orderCode = new SimpleObjectProperty<>();
+    private final ObjectProperty<S7CpuInfo> cpuInfo = new SimpleObjectProperty<>();
+    private final ObjectProperty<S7CpInfo> cpInfo = new SimpleObjectProperty<>();
+
 
     public final BooleanProperty progressProperty() {
         return progress;
@@ -45,5 +53,17 @@ public class StatusBinding {
 
     public final ObjectProperty<byte[]> hexDataProperty() {
         return hexData;
+    }
+
+    public ObjectProperty<S7OrderCode> orderCodeProperty() {
+        return orderCode;
+    }
+
+    public ObjectProperty<S7CpInfo> cpInfoProperty() {
+        return cpInfo;
+    }
+
+    public ObjectProperty<S7CpuInfo> cpuInfoProperty() {
+        return cpuInfo;
     }
 }

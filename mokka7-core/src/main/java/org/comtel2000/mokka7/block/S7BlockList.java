@@ -46,7 +46,7 @@ public class S7BlockList {
         map.put(type, count);
     }
 
-    public int getSize(BlockType type) {
+    public int getSize(BlockSubType type) {
         return map.getOrDefault(type, 0);
     }
 
