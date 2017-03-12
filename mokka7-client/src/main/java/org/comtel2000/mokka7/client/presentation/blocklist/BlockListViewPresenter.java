@@ -39,10 +39,10 @@ public class BlockListViewPresenter implements Initializable {
     private final static org.slf4j.Logger logger = LoggerFactory.getLogger(BlockListViewPresenter.class);
 
     @Inject
-    MonitoredS7Client client;
+    private MonitoredS7Client client;
 
     @Inject
-    StatusBinding bindings;
+    private StatusBinding bindings;
 
     @FXML
     private TextField ob;
@@ -75,7 +75,7 @@ public class BlockListViewPresenter implements Initializable {
     }
 
     @FXML
-    void refresh(ActionEvent event) {
+    private void refresh(ActionEvent event) {
         CompletableService.supply(() -> client.getS7BlockList()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update)
                 .start();
     }

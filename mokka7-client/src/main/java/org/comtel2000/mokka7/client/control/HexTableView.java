@@ -16,14 +16,12 @@
  */
 package org.comtel2000.mokka7.client.control;
 
-import java.util.Objects;
+import java.nio.ByteBuffer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
@@ -36,17 +34,33 @@ public class HexTableView extends TableView<Integer> {
 
     private final StringBuilder sb = new StringBuilder();
 
-    private byte[] data;
-
-    private final StringProperty title = new SimpleStringProperty();
+    private ByteBuffer buffer;
 
     public HexTableView() {
-        this(32);
+        super();
+        init();
     }
 
-    public HexTableView(int size) {
-        super();
-        init(size);
+    @SuppressWarnings("unchecked")
+    private void init() {
+        getStyleClass().add("hex-table-view");
+        // setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        TableColumn<Integer, String> count = new TableColumn<>("OFFSET");
+        count.setId("count-column");
+        count.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<String>(createCountItem(cellData.getValue())));
+
+        TableColumn<Integer, String> hex = new TableColumn<>("00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F");
+        hex.setId("hex-column");
+        hex.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<String>(createHexItem(cellData.getValue())));
+
+        TableColumn<Integer, String> text = new TableColumn<>("TEXT");
+        text.setId("text-column");
+        text.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<String>(createItem(cellData.getValue())));
+
+        getColumns().addAll(count, hex, text);
+        sortPolicyProperty().set(t -> false);
+        setColumnResizePolicy((param) -> true);
     }
 
     @Override
@@ -54,63 +68,52 @@ public class HexTableView extends TableView<Integer> {
         return DEFAULT_STYLE;
     }
 
-    public StringProperty titleProperty() {
-        return title;
+    public void setData(byte[] buf) {
+        buffer = ByteBuffer.wrap(buf);
+        Platform.runLater(() -> initItems(Math.floorDiv(buf.length, 16) + 1));
     }
 
-    public void setData(byte[] data) {
-        this.data = Objects.requireNonNull(data);
-        Platform.runLater(() -> initItems(Math.floorDiv(data.length, 16) + 1));
+    public ByteBuffer getData() {
+        return buffer;
     }
-
-    public byte[] getData() {
-        return data;
-    }
-
-    private void init(int size) {
-
-        setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        initItems(size);
-
-        TableColumn<Integer, String> column = new TableColumn<>(title.get());
-        column.textProperty().bind(title);
-
-        column.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<String>(createItem(cellData.getValue())));
-
-        getColumns().add(column);
-        sortPolicyProperty().set(t -> false);
-    }
-
 
     private void initItems(int size) {
         getItems().setAll(IntStream.range(0, size).boxed().collect(Collectors.toList()));
     }
 
-    private String createItem(int value) {
+    private String createCountItem(int value) {
 
-        if (data == null || data.length == 0) {
+        int pos = getPosition(value);
+        if (pos < 0) {
             return null;
         }
-        sb.setLength(0);
-        int pos = value * 16;
-        if (pos >= data.length) {
-            return null;
-        }
-        int length = Math.min(16, data.length - pos);
+        int length = Math.min(16, buffer.limit() - pos);
         if (length < 1) {
             return null;
         }
 
+        sb.setLength(0);
         for (int i = 16; i >= 0; i -= 4) {
             sb.append(HEX_DIGIT[0x0F & value >>> i]);
         }
-        sb.append('0').append(':').append(EMP_CHAR).append(EMP_CHAR);
+        return sb.toString();
+    }
 
+    private String createHexItem(int value) {
+
+        int pos = getPosition(value);
+        if (pos < 0) {
+            return null;
+        }
+        int length = Math.min(16, buffer.limit() - pos);
+        if (length < 1) {
+            return null;
+        }
+        sb.setLength(0);
         for (int i = 0; i < 16; i++) {
             if (i < length) {
-                sb.append(HEX_DIGIT[0x0F & data[pos + i] >> 4]);
-                sb.append(HEX_DIGIT[0x0F & data[pos + i]]);
+                sb.append(HEX_DIGIT[0x0F & buffer.get(pos + i) >> 4]);
+                sb.append(HEX_DIGIT[0x0F & buffer.get(pos + i)]);
             } else {
                 sb.append(EMP_CHAR).append(EMP_CHAR);
             }
@@ -119,13 +122,27 @@ public class HexTableView extends TableView<Integer> {
                 sb.append(EMP_CHAR);
             }
         }
-        sb.append(EMP_CHAR);
+        return sb.toString();
+    }
+
+    private String createItem(int value) {
+
+        int pos = getPosition(value);
+        if (pos < 0) {
+            return null;
+        }
+        int length = Math.min(16, buffer.limit() - pos);
+        if (length < 1) {
+            return null;
+        }
+
+        sb.setLength(0);
         for (int i = 0; i < 16; i++) {
             if (i >= length) {
                 sb.append(EMP_CHAR);
                 continue;
             }
-            char ch = (char) (data[pos + i] & 0xFF);
+            char ch = (char) (buffer.get(pos + i) & 0xFF);
             if (Character.isISOControl(ch) || Character.isWhitespace(ch)) {
                 sb.append(DOT_CHAR);
                 continue;
@@ -135,4 +152,14 @@ public class HexTableView extends TableView<Integer> {
         return sb.toString();
     }
 
+    private int getPosition(int value) {
+        if (buffer == null || buffer.limit() == 0) {
+            return -1;
+        }
+        int pos = value * 16;
+        if (pos >= buffer.limit()) {
+            return -1;
+        }
+        return pos;
+    }
 }

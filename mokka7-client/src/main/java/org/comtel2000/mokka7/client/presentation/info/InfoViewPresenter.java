@@ -25,27 +25,15 @@ import org.comtel2000.mokka7.block.S7CpInfo;
 import org.comtel2000.mokka7.block.S7CpuInfo;
 import org.comtel2000.mokka7.block.S7OrderCode;
 import org.comtel2000.mokka7.client.presentation.StatusBinding;
-import org.comtel2000.mokka7.client.service.SessionManager;
-import org.comtel2000.mokka7.metrics.MonitoredS7Client;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
 
 public class InfoViewPresenter implements Initializable {
 
     @Inject
-    MonitoredS7Client client;
-
-    @Inject
-    SessionManager session;
-
-    @Inject
-    StatusBinding bindings;
-
-    @FXML
-    private BorderPane pane;
+    private StatusBinding bindings;
 
     @FXML
     private TextField orderCode;
@@ -90,23 +78,43 @@ public class InfoViewPresenter implements Initializable {
     }
 
     private void update(S7OrderCode o) {
-        orderCode.setText(o == null ? null : o.getCode());
-        version.setText(o == null ? null : o.getFirmware());
+        if (o == null) {
+            orderCode.setText(null);
+            version.setText(null);
+            return;
+        }
+        orderCode.setText(o.getCode());
+        version.setText(o.getFirmware());
     }
 
     private void update(S7CpInfo o) {
-        maxPDU.setText(o == null ? null : Integer.toString(o.maxPduLength));
-        maxMPI.setText(o == null ? null : Integer.toString(o.maxMpiRate));
-        maxActConn.setText(o == null ? null : Integer.toString(o.maxConnections));
-        maxCBUS.setText(o == null ? null : Integer.toString(o.maxBusRate));
+        if (o == null) {
+            maxPDU.setText(null);
+            maxMPI.setText(null);
+            maxActConn.setText(null);
+            maxCBUS.setText(null);
+            return;
+        }
+        maxPDU.setText(Integer.toString(o.maxPduLength));
+        maxMPI.setText(Integer.toString(o.maxMpiRate));
+        maxActConn.setText(Integer.toString(o.maxConnections));
+        maxCBUS.setText(Integer.toString(o.maxBusRate));
     }
 
     private void update(S7CpuInfo o) {
-        moduleType.setText(o == null ? null : o.moduleTypeName);
-        serial.setText(o == null ? null : o.serialNumber);
-        vendorCopyright.setText(o == null ? null : o.copyright);
-        asName.setText(o == null ? null : o.asName);
-        moduleName.setText(o == null ? null : o.moduleName);
+        if (o == null) {
+            moduleType.setText(null);
+            serial.setText(null);
+            vendorCopyright.setText(null);
+            asName.setText(null);
+            moduleName.setText(null);
+            return;
+        }
+        moduleType.setText(o.moduleTypeName);
+        serial.setText(o.serialNumber);
+        vendorCopyright.setText(o.copyright);
+        asName.setText(o.asName);
+        moduleName.setText(o.moduleName);
     }
 
     private void reset() {

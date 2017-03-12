@@ -47,16 +47,16 @@ public class ConnectViewPresenter implements Initializable {
     private final static org.slf4j.Logger logger = LoggerFactory.getLogger(ConnectViewPresenter.class);
 
     @Inject
-    StatusBinding bindings;
+    private StatusBinding bindings;
 
     @Inject
-    SessionManager session;
+    private SessionManager session;
 
     @Inject
-    MonitoredS7Client client;
+    private MonitoredS7Client client;
 
     @Inject
-    PingWatchdogService pingService;
+    private PingWatchdogService pingService;
 
     @FXML
     private Button connect;
@@ -122,14 +122,14 @@ public class ConnectViewPresenter implements Initializable {
     }
 
     @FXML
-    public void connect() {
+    private void connect() {
         bindings.statusTextProperty().set("try to connect to: " + host.getText());
         CompletableService.supply(() -> client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(), slot.getSelectionModel().getSelectedItem()))
                 .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields).start();
     }
 
     @FXML
-    public void disconnect() {
+    private void disconnect() {
         pingService.stop();
         CompletableService.supply(() -> {
             client.disconnect();

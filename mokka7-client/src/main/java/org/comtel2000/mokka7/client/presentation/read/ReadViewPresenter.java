@@ -50,16 +50,16 @@ public class ReadViewPresenter implements Initializable {
     private final static org.slf4j.Logger logger = LoggerFactory.getLogger(ReadViewPresenter.class);
 
     @Inject
-    MonitoredS7Client client;
+    private MonitoredS7Client client;
 
     @Inject
-    SessionManager session;
+    private SessionManager session;
 
     @Inject
-    StatusBinding bindings;
+    private StatusBinding bindings;
 
     @Inject
-    HexTableView table;
+    private HexTableView table;
 
     @FXML
     private BorderPane pane;
@@ -157,7 +157,7 @@ public class ReadViewPresenter implements Initializable {
     }
 
     @FXML
-    void read(ActionEvent event) {
+    private void read(ActionEvent event) {
         Arrays.fill(buffer, (byte) 0);
         long time = System.currentTimeMillis();
         CompletableService
@@ -167,7 +167,7 @@ public class ReadViewPresenter implements Initializable {
     }
 
     @FXML
-    void dbget(ActionEvent event) {
+    private void dbget(ActionEvent event) {
         Arrays.fill(buffer, (byte) 0);
         long time = System.currentTimeMillis();
         CompletableService.supply(() -> client.dbGet(Integer.valueOf(db.getText()), buffer)).bindRunning(bindings.progressProperty()).onFailed(this::report)
@@ -175,7 +175,7 @@ public class ReadViewPresenter implements Initializable {
     }
 
     @FXML
-    void dbfill(ActionEvent event) {
+    private void dbfill(ActionEvent event) {
         Alert alert = new Alert(AlertType.CONFIRMATION, "Are you sure you want to fill DB block " + db.getText() + "?");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.orElse(ButtonType.CANCEL) != ButtonType.OK) {
@@ -183,7 +183,7 @@ public class ReadViewPresenter implements Initializable {
         }
         Arrays.fill(buffer, (byte) 0);
         try {
-            byte fill = (byte) (Integer.valueOf(value.getText()) & 0xFF);
+            byte fill = parseByte(value.getText());
             Arrays.fill(buffer, fill);
             long time = System.currentTimeMillis();
             CompletableService.supply(() -> client.dbFill(Integer.valueOf(db.getText()), fill)).bindRunning(bindings.progressProperty()).onFailed(this::report)
@@ -194,7 +194,7 @@ public class ReadViewPresenter implements Initializable {
     }
 
     @FXML
-    void write(ActionEvent event) {
+    private void write(ActionEvent event) {
         String v = value.getText();
         if (v == null || v.isEmpty()) {
             return;
@@ -214,6 +214,13 @@ public class ReadViewPresenter implements Initializable {
                 .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded((b) -> updateTable(b, size, time)).start();
     }
 
+    private byte parseByte(String value) throws Exception {
+        if (value == null || value.trim().isEmpty()) {
+            return 0;
+        }
+        return (byte) (Integer.valueOf(value, 16) & 0xFF);
+    }
+
     private void updateTable(boolean write, int size, long time) {
         if (size < 1 || !write) {
             table.setData(new byte[0]);
@@ -229,9 +236,10 @@ public class ReadViewPresenter implements Initializable {
             return;
         }
         table.setData(Arrays.copyOfRange(buffer, 0, size));
-        table.titleProperty().set(createTitle());
+        //table.titleProperty().set(createTitle());
+        String title = createTitle();
         bindings.statusTextProperty()
-                .set(String.format("read %s (bytes: %d) done in %dms", table.titleProperty().get(), size, System.currentTimeMillis() - time));
+                .set(String.format("read %s (bytes: %d) done in %dms", title, size, System.currentTimeMillis() - time));
     }
 
     private String createTitle() {
@@ -296,7 +304,6 @@ public class ReadViewPresenter implements Initializable {
 
     private void report(Throwable th) {
         table.setData(new byte[0]);
-        table.titleProperty().set("");
         if (th != null) {
             logger.error(th.getMessage(), th);
             if (th.getCause() != null) {

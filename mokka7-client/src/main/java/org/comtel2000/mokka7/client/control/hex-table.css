@@ -1,10 +1,27 @@
-.table-view {
+.hex-table-view {
     -fx-font-family: "Monospaced";
     -fx-font-weight: bold;
     -fx-pref-width: 600;
     -fx-pref-height: 400;
+    -fx-fixed-cell-size: 22;
 }
 
-.table-view .table-row-cell {
+.hex-table-view .table-row-cell {
     -fx-cell-size: 20;
+}
+
+.hex-table-view .column-header .label {
+    -fx-alignment: center-left;
+}
+
+.hex-table-view #count-column {
+	-fx-pref-width: 60;
+}
+
+.hex-table-view #hex-column {
+	-fx-pref-width: 360;
+}
+
+.hex-table-view #text-column {
+	-fx-pref-width: 150;
 }

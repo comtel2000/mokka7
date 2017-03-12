@@ -35,7 +35,7 @@
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
               </rowConstraints>
                <children>
-                  <Label text="BlockList" textFill="#403f3f" GridPane.columnSpan="2">
+                  <Label text="Block List" textFill="#403f3f" GridPane.columnSpan="2">
                      <font>
                         <Font name="System Bold" size="10.0" />
                      </font>

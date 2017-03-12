@@ -113,17 +113,11 @@ public class S7Client implements Client, ReturnCode {
     public boolean connect() throws S7Exception {
         logger.debug("try to connect to {}", ipAddress);
 
+        disconnect();
         try {
-            if (!connected) {
-                // First stage : TCP Connection
-                if (openTcpConnect()) {
-                    // Second stage : ISOTCP (ISO 8073) Connection
-                    if (openIsoConnect()) {
-                        // Third stage : S7 PDU negotiation
-                        updateNegotiatePduLength();
-                    }
-                }
-            }
+            openTcpConnect(5000);
+            openIsoConnect();
+            updateNegotiatePduLength();
         } catch (S7Exception e) {
             disconnect();
             throw e;
@@ -288,9 +282,10 @@ public class S7Client implements Client, ReturnCode {
             if (length < 31) {
                 throw buildException(ISO_INVALID_PDU);
             }
-            if (S7.getWordAt(pdu, 27) == 0) {
-                return PlcCpuStatus.valueOf(pdu[44]);
+            if (S7.getWordAt(pdu, 27) != 0) {
+                throw buildException(S7.getWordAt(pdu, 27));
             }
+            return PlcCpuStatus.valueOf(pdu[44]);
         }
         throw buildException(S7_FUNCTION_ERROR);
     }
@@ -298,30 +293,39 @@ public class S7Client implements Client, ReturnCode {
     @Override
     public S7Protection getProtection() throws S7Exception {
         S7Szl szl = getSzl(0x0232, 0x0004, 256);
-        if (szl != null) {
-            return S7Protection.of(szl.data);
-        }
-        throw buildException(S7_FUNCTION_ERROR);
+        return S7Protection.of(szl.data);
     }
 
-    private boolean openIsoConnect() throws S7Exception {
+    private void openTcpConnect(int timeout) throws S7Exception {
+        try {
+            tcpSocket = new Socket();
+            tcpSocket.connect(new InetSocketAddress(ipAddress, tcpPort), timeout);
+            tcpSocket.setTcpNoDelay(true);
+            tcpSocket.setSoTimeout(recvTimeout);
+            inStream = new BufferedInputStream(tcpSocket.getInputStream());
+            outStream = new BufferedOutputStream(tcpSocket.getOutputStream());
+        } catch (IOException e) {
+            throw buildException(TCP_CONNECTION_FAILED, e);
+        }
+    }
+
+    private void openIsoConnect() throws S7Exception {
         ISO_CR[16] = localTSAP_HI;
         ISO_CR[17] = localTSAP_LO;
         ISO_CR[20] = remoteTSAP_HI;
         ISO_CR[21] = remoteTSAP_LO;
-        // Sends the connection request telegram
+
         if (sendPacket(ISO_CR)) {
-            // gets the reply (if any)
             int length = recvIsoPacket();
             if (length != 22) {
                 logger.warn("invalid PDU length: {} ({})", length, 22);
                 if (length == 33){
-                    return true;
+                    return;
                 }
                 throw buildException(ISO_INVALID_PDU);
             }
             if (lastPDUType == (byte) 0xd0) {
-                return true;
+                return;
             }
         }
         throw buildException(ISO_CONNECTION_FAILED);
@@ -330,7 +334,6 @@ public class S7Client implements Client, ReturnCode {
     private boolean updateNegotiatePduLength() throws S7Exception {
         // Set PDU Size Requested
         S7.setWordAt(S7_PN, 23, DEFAULT_PDU_SIZE_REQUESTED);
-        // Sends the connection request telegram
         if (sendPacket(S7_PN)) {
             int length = recvIsoPacket();
             if (length != 27) {
@@ -719,7 +722,10 @@ public class S7Client implements Client, ReturnCode {
             if (length < 33) {
                 throw buildException(ISO_INVALID_PDU);
             }
-            if ((S7.getWordAt(pdu, 27) != 0) || (pdu[29] != (byte) 0xff)) {
+            if (S7.getWordAt(pdu, 27) != 0){
+                throw buildException(S7.getWordAt(pdu, 27));
+            }
+            if (pdu[29] != (byte) 0xff) {
                 throw buildException(S7_FUNCTION_ERROR);
             }
             if (first) {
@@ -836,7 +842,6 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public boolean setPlcDateTime(LocalDateTime dateTime) throws S7Exception {
-
         S7.setDateTimeAt(S7_SET_DT, 31, dateTime);
         if (sendPacket(S7_SET_DT)) {
             int length = recvIsoPacket();
@@ -845,12 +850,11 @@ public class S7Client implements Client, ReturnCode {
             }
 
             if (S7.getWordAt(pdu, 27) != 0) {
-                throw buildException(S7_FUNCTION_ERROR);
+                throw buildException(S7.getWordAt(pdu, 27));
             }
             return true;
         }
-
-        return false;
+        throw buildException(S7_FUNCTION_ERROR);
     }
 
     @Override
@@ -884,26 +888,13 @@ public class S7Client implements Client, ReturnCode {
             }
 
             if (S7.getWordAt(pdu, 27) != 0) {
-                throw buildException(S7_FUNCTION_ERROR);
+                throw buildException(S7.getWordAt(pdu, 27));
             }
             return true;
         }
-        return false;
+        throw buildException(S7_FUNCTION_ERROR);
     }
 
-    private boolean openTcpConnect() throws S7Exception {
-        try {
-            tcpSocket = new Socket();
-            tcpSocket.connect(new InetSocketAddress(ipAddress, tcpPort), 5000);
-            tcpSocket.setTcpNoDelay(true);
-            tcpSocket.setSoTimeout(recvTimeout);
-            inStream = new BufferedInputStream(tcpSocket.getInputStream());
-            outStream = new BufferedOutputStream(tcpSocket.getOutputStream());
-        } catch (IOException e) {
-            throw buildException(TCP_CONNECTION_FAILED, e);
-        }
-        return true;
-    }
 
     @Override
     public boolean writeArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer)
@@ -1003,7 +994,7 @@ public class S7Client implements Client, ReturnCode {
                     // byte/word/dword/real/char converted to byte[] etc.
                     pdu[32] = TS_RESBYTE;
                     break;
-            };
+            }
             // length
             S7.setWordAt(pdu, 33, length);
 
