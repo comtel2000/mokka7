@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane fx:id="pane" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.mokka7.client.presentation.chart.ChartViewPresenter">
+   <right>
+      <ScrollPane fitToWidth="true">
+         <BorderPane.margin>
+            <Insets />
+         </BorderPane.margin>
+         <content>
+            <VBox minWidth="100.0" prefWidth="200.0" spacing="5.0">
+               <children>
+                  <Label text="Area" textFill="#575757">
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font></Label>
+                  <ComboBox fx:id="area" maxWidth="1.7976931348623157E308" promptText="Area" />
+                  <Label text="DB Number" textFill="#575757">
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="db" maxWidth="1.7976931348623157E308" promptText="DB" />
+                  <Label text="Start" textFill="#575757">
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="start" maxWidth="1.7976931348623157E308" promptText="Start" />
+                  <Label text="DataType" textFill="#575757">
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
+                  </Label>
+                  <ComboBox fx:id="dataType" maxWidth="1.7976931348623157E308" promptText="DataType" />
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label text="Update Intervall" textFill="#575757">
+                           <font>
+                              <Font name="System Bold" size="11.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="intervalLabel" text="(200)" textFill="#575757">
+                           <font>
+                              <Font name="System Bold" size="11.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </HBox>
+                  <Slider fx:id="interval" blockIncrement="100.0" majorTickUnit="250.0" max="2000.0" min="100.0" minorTickCount="1" showTickMarks="true" snapToTicks="true" value="100.0" />
+                  <Button fx:id="toggleService" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#toggleService" text="Start Service" />
+                  <Button fx:id="add" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#add" text="Add">
+                     <VBox.margin>
+                        <Insets top="10.0" />
+                     </VBox.margin>
+                  </Button>
+                  <ScrollPane fitToWidth="true" maxHeight="1.7976931348623157E308">
+                     <content>
+                        <ListView fx:id="chartList" fixedCellSize="25.0" maxHeight="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" />
+                     </content>
+                  </ScrollPane>
+                  <Button fx:id="remove" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#remove" text="Remove" />
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label text="Max. History" textFill="#575757">
+                           <font>
+                              <Font name="System Bold" size="11.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="historyLabel" text="(100)" textFill="#575757">
+                           <font>
+                              <Font name="System Bold" size="11.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </HBox>
+                  <Slider fx:id="history" blockIncrement="100.0" majorTickUnit="2500.0" max="20000.0" min="100.0" minorTickCount="1" showTickMarks="true" value="100.0" />
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label text="Visible range" textFill="#575757">
+                           <font>
+                              <Font name="System Bold" size="11.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="rangeLabel" text="(100)" textFill="#575757">
+                           <font>
+                              <Font name="System Bold" size="11.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </HBox>
+                  <Slider fx:id="range" blockIncrement="100.0" majorTickUnit="2500.0" max="20000.0" min="100.0" minorTickCount="1" showTickMarks="true" value="100.0" />
+               </children>
+               <padding>
+                  <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+               </padding>
+            </VBox>
+         </content>
+         <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+         </padding>
+      </ScrollPane>
+   </right>
+   <center>
+      <LineChart fx:id="chart" alternativeRowFillVisible="false" maxWidth="1.7976931348623157E308" prefWidth="600.0" title="Chart View" verticalGridLinesVisible="false">
+        <xAxis>
+          <NumberAxis fx:id="timeAxis" label="time" minorTickVisible="false" side="BOTTOM" />
+        </xAxis>
+        <yAxis>
+          <NumberAxis fx:id="valueAxis" label="value" side="LEFT" />
+        </yAxis>
+      </LineChart>
+   </center>
+</BorderPane>

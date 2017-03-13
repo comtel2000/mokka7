@@ -19,7 +19,6 @@ package org.comtel2000.mokka7.client.presentation.connect;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.ResourceBundle;
-import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
@@ -122,14 +121,14 @@ public class ConnectViewPresenter implements Initializable {
     }
 
     @FXML
-    private void connect() {
+    void connect() {
         bindings.statusTextProperty().set("try to connect to: " + host.getText());
         CompletableService.supply(() -> client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(), slot.getSelectionModel().getSelectedItem()))
                 .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields).start();
     }
 
     @FXML
-    private void disconnect() {
+    void disconnect() {
         pingService.stop();
         CompletableService.supply(() -> {
             client.disconnect();
@@ -154,7 +153,7 @@ public class ConnectViewPresenter implements Initializable {
             pingService.setHost(host.getText());
             pingService.setTimeout(2000);
             try {
-                pingService.start(1, TimeUnit.SECONDS);
+                pingService.start(1000);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }

@@ -30,7 +30,7 @@ public class WriteBitSample extends ClientRunner {
     final int start = 0;
 
     public WriteBitSample() {
-        super();
+        super("192.168.100.250", 0, 0);
     }
 
     @Override

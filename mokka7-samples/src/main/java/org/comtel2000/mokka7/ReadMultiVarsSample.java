@@ -43,10 +43,10 @@ public class ReadMultiVarsSample extends ClientRunner {
         bitSet(b3);
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.DB, db, 0, 1, DataType.BYTE);
-            mv.add(AreaType.DB, db, 1, 1, DataType.BYTE);
-            mv.add(AreaType.DB, db, 2, 1, DataType.BYTE);
-            mv.add(AreaType.DB, db, 3, 1, DataType.BYTE);
+            mv.add(AreaType.DB, DataType.BYTE, db, 0, 1);
+            mv.add(AreaType.DB, DataType.BYTE, db, 1, 1);
+            mv.add(AreaType.DB, DataType.BYTE, db, 2, 1);
+            mv.add(AreaType.DB, DataType.BYTE, db, 3, 1);
 
             mv.read();
 
@@ -62,8 +62,8 @@ public class ReadMultiVarsSample extends ClientRunner {
         }
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.DB, db, 0, 1, DataType.WORD);
-            mv.add(AreaType.DB, db, 2, 1, DataType.WORD);
+            mv.add(AreaType.DB, DataType.WORD, db, 0, 1);
+            mv.add(AreaType.DB, DataType.WORD, db, 2, 1);
             mv.read();
 
             checkResult(mv.getResult(0).result);
@@ -77,7 +77,7 @@ public class ReadMultiVarsSample extends ClientRunner {
         }
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.DB, db, 0, 2, DataType.WORD);
+            mv.add(AreaType.DB, DataType.WORD, db, 0, 2);
             mv.read();
 
             checkResult(mv.getResult(0).result);
@@ -89,8 +89,8 @@ public class ReadMultiVarsSample extends ClientRunner {
         }
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.DB, db, 0, 1, DataType.DWORD);
-            mv.add(AreaType.DB, db, 4, 1, DataType.DWORD);
+            mv.add(AreaType.DB, DataType.DWORD, db, 0, 1);
+            mv.add(AreaType.DB, DataType.DWORD, db, 4, 1);
             mv.read();
 
             checkResult(mv.getResult(0).result);

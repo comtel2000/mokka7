@@ -41,7 +41,6 @@ import org.comtel2000.mokka7.block.S7Protection;
 import org.comtel2000.mokka7.block.S7Szl;
 import org.comtel2000.mokka7.exception.S7Exception;
 import org.comtel2000.mokka7.type.AreaType;
-import org.comtel2000.mokka7.type.ConnectionType;
 import org.comtel2000.mokka7.type.DataType;
 import org.comtel2000.mokka7.util.ReturnCode;
 import org.comtel2000.mokka7.util.S7;
@@ -61,30 +60,37 @@ public class S7Client implements Client, ReturnCode {
 
     private boolean connected = false;
 
-    private ConnectionType connType = ConnectionType.PG;
+    private S7Config config;
 
     private Socket tcpSocket;
     private BufferedInputStream inStream;
     private OutputStream outStream;
 
-    private String ipAddress;
-
     private byte lastPDUType;
-    private byte localTSAP_HI;
-    private byte localTSAP_LO;
-    private byte remoteTSAP_HI;
-    private byte remoteTSAP_LO;
 
     private final byte[] pdu = new byte[2048];
 
     private int recvTimeout = RECV_TIMEOUT;
-    private int tcpPort = ISO_TCP;
 
     private final int MAX_INC_COUNT = 65535;
+
     private final AtomicInteger counter = new AtomicInteger(-1);
 
     public S7Client() {
+        this(new S7Config());
+    }
+
+    public S7Client(S7Config config) {
         Arrays.fill(buffer, (byte) 0);
+        this.setConfig(config);
+    }
+
+    public S7Config getConfig() {
+        return config;
+    }
+
+    public void setConfig(S7Config config) {
+        this.config = Objects.requireNonNull(config);
     }
 
     private int incrementAndGet() {
@@ -111,9 +117,10 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public boolean connect() throws S7Exception {
-        logger.debug("try to connect to {}", ipAddress);
-
-        disconnect();
+        logger.debug("try to connect to {}:{}", config.getHost(), config.getPort());
+        if (connected) {
+            disconnect();
+        }
         try {
             openTcpConnect(5000);
             openIsoConnect();
@@ -127,23 +134,16 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public boolean connect(String address, int rack, int slot) throws S7Exception {
-        int remoteTSAP = (connType.getValue() << 8) + (rack * 0x20) + slot;
-        setConnectionParams(address, 0x0100, remoteTSAP);
+        config.setHost(address);
+        config.setRack(rack);
+        config.setSlot(slot);
+        config.setRemoteTSAP((config.getType().getValue() << 8) + (rack * 0x20) + slot);
         return connect();
     }
 
     @Override
     public boolean isConnected() {
         return connected;
-    }
-
-
-    public int getTcpPort() {
-        return tcpPort;
-    }
-
-    public void setTcpPort(int tcpPort) {
-        this.tcpPort = tcpPort;
     }
 
     public int getRecvTimeout() {
@@ -186,6 +186,7 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public void disconnect() {
+        logger.debug("disconnecting..");
         closeSilently(inStream);
         closeSilently(outStream);
         closeSilently(tcpSocket);
@@ -299,7 +300,7 @@ public class S7Client implements Client, ReturnCode {
     private void openTcpConnect(int timeout) throws S7Exception {
         try {
             tcpSocket = new Socket();
-            tcpSocket.connect(new InetSocketAddress(ipAddress, tcpPort), timeout);
+            tcpSocket.connect(new InetSocketAddress(config.getHost(), config.getPort()), timeout);
             tcpSocket.setTcpNoDelay(true);
             tcpSocket.setSoTimeout(recvTimeout);
             inStream = new BufferedInputStream(tcpSocket.getInputStream());
@@ -310,16 +311,20 @@ public class S7Client implements Client, ReturnCode {
     }
 
     private void openIsoConnect() throws S7Exception {
-        ISO_CR[16] = localTSAP_HI;
-        ISO_CR[17] = localTSAP_LO;
-        ISO_CR[20] = remoteTSAP_HI;
-        ISO_CR[21] = remoteTSAP_LO;
+
+        int locTSAP = config.getLocalTSAP() & 0x0000FFFF;
+        int remTSAP = config.getRemoteTSAP() & 0x0000FFFF;
+
+        ISO_CR[16] = (byte) (locTSAP >> 8);
+        ISO_CR[17] = (byte) (locTSAP & 0x00FF);
+        ISO_CR[20] = (byte) (remTSAP >> 8);
+        ISO_CR[21] = (byte) (remTSAP & 0x00FF);
 
         if (sendPacket(ISO_CR)) {
             int length = recvIsoPacket();
             if (length != 22) {
                 logger.warn("invalid PDU length: {} ({})", length, 22);
-                if (length == 33){
+                if (length == 33) {
                     return;
                 }
                 throw buildException(ISO_INVALID_PDU);
@@ -433,16 +438,15 @@ public class S7Client implements Client, ReturnCode {
             // address into the PLC
             int address = items[c].start;
             s7Item[11] = (byte) (address & 0xff);
-            address = address >> 8;
-            s7Item[10] = (byte) (address & 0xff);
-            address = address >> 8;
-            s7Item[9] = (byte) (address & 0xff);
+            s7Item[10] = (byte) (address >> 8 & 0xff);
+            s7Item[9] = (byte) (address >> 16 & 0xff);
 
             System.arraycopy(s7Item, 0, pdu, offset, s7Item.length);
             offset += s7Item.length;
         }
 
         if (offset > pduLength) {
+            logger.error("PDU length < offset ({}/{})", pduLength, offset);
             throw buildException(ERR_SIZE_OVER_PDU);
         }
 
@@ -524,10 +528,9 @@ public class S7Client implements Client, ReturnCode {
             // address into the PLC
             int address = items[c].start;
             s7ParItem[11] = (byte) (address & 0xff);
-            address = address >> 8;
-            s7ParItem[10] = (byte) (address & 0xff);
-            address = address >> 8;
-            s7ParItem[9] = (byte) (address & 0xff);
+            s7ParItem[10] = (byte) (address >> 8 & 0xff);
+            s7ParItem[9] = (byte) (address >> 16 & 0xff);
+
             System.arraycopy(s7ParItem, 0, pdu, offset, s7ParItem.length);
             offset += S7_MWR_PARAM.length;
         }
@@ -602,15 +605,7 @@ public class S7Client implements Client, ReturnCode {
 
     @Override
     public int readArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer) throws S7Exception {
-        int address;
-        int numElements, maxElements, totElements;
-        int sizeRequested;
-        int length;
-        int offset = 0;
-        int wordSize = 1;
-        int _start = start;
         int _amount = amount;
-
         DataType _type;
         switch (area) {
             case CT:
@@ -623,27 +618,36 @@ public class S7Client implements Client, ReturnCode {
                 _type = type;
                 break;
         }
-
-        wordSize = DataType.getByteLength(_type);
+        int wordSize = DataType.getByteLength(_type);
         if (wordSize == 0) {
             throw buildException(ERR_INVALID_WORD_LEN);
         }
-
-        if (_type == DataType.BIT) {
-            _amount = 1; // Only 1 bit can be transferred at time
-        } else {
-            if ((_type != DataType.COUNTER) && (_type != DataType.TIMER)) {
+        switch (_type) {
+            case BIT:
+                _amount = 1;
+                break;
+            case COUNTER:
+            case TIMER:
+                break;
+            default:
                 _amount = _amount * wordSize;
                 wordSize = 1;
                 _type = DataType.BYTE;
-            }
+                break;
         }
+        return readInternalArea(area, db, start, _amount, _type, wordSize, buffer);
+    }
 
-        maxElements = (pduLength - 18) / wordSize; // 18 = Reply telegram header
-        totElements = _amount;
+    private int readInternalArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final int wordSize, final byte[] buffer) throws S7Exception {
+        int sizeRequested;
+        int offset = 0;
+        // 18 = Reply telegram header
+        int maxElements = (pduLength - 18) / wordSize;
+        int totElements = amount;
+        int position = start;
 
         while (totElements > 0) {
-            numElements = totElements;
+            int numElements = totElements;
             if (numElements > maxElements) {
                 numElements = maxElements;
             }
@@ -659,12 +663,17 @@ public class S7Client implements Client, ReturnCode {
                 S7.setWordAt(pdu, 25, db);
             }
 
-            // Adjusts start and word length
-            if ((_type == DataType.BIT) || (_type == DataType.COUNTER) || (_type == DataType.TIMER)) {
-                address = _start;
-                pdu[22] = _type.getValue();
-            } else {
-                address = _start << 3;
+            int address;
+            switch (type) {
+                case BIT:
+                case COUNTER:
+                case TIMER:
+                    address = position;
+                    pdu[22] = type.getValue();
+                    break;
+                default:
+                    address = position << 3;
+                    break;
             }
 
             // Num elements
@@ -672,13 +681,11 @@ public class S7Client implements Client, ReturnCode {
 
             // address into the PLC (only 3 bytes)
             pdu[30] = (byte) (address & 0xff);
-            address = address >> 8;
-            pdu[29] = (byte) (address & 0xff);
-            address = address >> 8;
-            pdu[28] = (byte) (address & 0xff);
+            pdu[29] = (byte) (address >> 8 & 0xff);
+            pdu[28] = (byte) (address >> 16 & 0xff);
 
             if (sendPacket(pdu, SIZE_RD)) {
-                length = recvIsoPacket();
+                int length = recvIsoPacket();
                 if (length < 25) {
                     throw buildException(ERR_ISO_INVALID_DATA_SIZE);
                 }
@@ -689,7 +696,7 @@ public class S7Client implements Client, ReturnCode {
                 offset += sizeRequested;
             }
             totElements -= numElements;
-            _start += numElements * wordSize;
+            position += numElements * wordSize;
         }
         return offset;
     }
@@ -722,7 +729,7 @@ public class S7Client implements Client, ReturnCode {
             if (length < 33) {
                 throw buildException(ISO_INVALID_PDU);
             }
-            if (S7.getWordAt(pdu, 27) != 0){
+            if (S7.getWordAt(pdu, 27) != 0) {
                 throw buildException(S7.getWordAt(pdu, 27));
             }
             if (pdu[29] != (byte) 0xff) {
@@ -825,22 +832,6 @@ public class S7Client implements Client, ReturnCode {
     }
 
     @Override
-    public void setConnectionParams(String address, int localTSAP, int remoteTSAP) {
-        int locTSAP = localTSAP & 0x0000FFFF;
-        int remTSAP = remoteTSAP & 0x0000FFFF;
-        ipAddress = Objects.requireNonNull(address);
-        localTSAP_HI = (byte) (locTSAP >> 8);
-        localTSAP_LO = (byte) (locTSAP & 0x00FF);
-        remoteTSAP_HI = (byte) (remTSAP >> 8);
-        remoteTSAP_LO = (byte) (remTSAP & 0x00FF);
-    }
-
-    @Override
-    public void setConnectionType(ConnectionType type) {
-        connType = Objects.requireNonNull(type);
-    }
-
-    @Override
     public boolean setPlcDateTime(LocalDateTime dateTime) throws S7Exception {
         S7.setDateTimeAt(S7_SET_DT, 31, dateTime);
         if (sendPacket(S7_SET_DT)) {
@@ -895,17 +886,10 @@ public class S7Client implements Client, ReturnCode {
         throw buildException(S7_FUNCTION_ERROR);
     }
 
-
     @Override
     public boolean writeArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final byte[] buffer)
             throws S7Exception {
-        int address;
-        int numElements, maxElements, totElements;
-        int dataSize, isoSize, length;
-        int offset = 0;
-        int _start = start;
         int _amount = amount;
-
         DataType _type;
         switch (area) {
             case CT:
@@ -918,40 +902,47 @@ public class S7Client implements Client, ReturnCode {
                 _type = type;
                 break;
         }
-
-        // Calc Word size
         int wordSize = DataType.getByteLength(_type);
         if (wordSize == 0) {
             throw buildException(ERR_INVALID_WORD_LEN);
         }
-
-        if (_type == DataType.BIT) {
-            _amount = 1;
-        } else {
-            if ((_type != DataType.COUNTER) && (_type != DataType.TIMER)) {
+        switch (_type) {
+            case BIT:
+                _amount = 1;
+                break;
+            case COUNTER:
+            case TIMER:
+                break;
+            default:
                 _amount = _amount * wordSize;
                 wordSize = 1;
                 _type = DataType.BYTE;
-            }
+                break;
         }
+        return writeInternalArea(area, db, start, _amount, _type, wordSize, buffer);
+    }
 
-        maxElements = (pduLength - 35) / wordSize; // 35 = Reply telegram header
-        totElements = _amount;
+    private boolean writeInternalArea(final AreaType area, final int db, final int start, final int amount, final DataType type, final int wordSize,
+            final byte[] buffer) throws S7Exception {
+        int maxElements = (pduLength - 35) / wordSize; // 35 = Reply telegram header
+        int totElements = amount;
+        int offset = 0;
+        int position = start;
         while (totElements > 0) {
-            numElements = totElements;
+            int numElements = totElements;
             if (numElements > maxElements) {
                 numElements = maxElements;
             }
 
-            dataSize = numElements * wordSize;
-            isoSize = SIZE_WR + dataSize;
+            int dataSize = numElements * wordSize;
+            int isoSize = SIZE_WR + dataSize;
 
             // setup the telegram
             System.arraycopy(S7_RW, 0, pdu, 0, SIZE_WR);
             // Whole telegram Size
             S7.setWordAt(pdu, 2, isoSize);
             // Data length
-            length = dataSize + 4;
+            int length = dataSize + 4;
             S7.setWordAt(pdu, 15, length);
             // Function
             pdu[17] = (byte) 0x05;
@@ -961,25 +952,28 @@ public class S7Client implements Client, ReturnCode {
                 S7.setWordAt(pdu, 25, db);
             }
 
-
             // Adjusts start and word length
-            if ((_type == DataType.BIT) || (_type == DataType.COUNTER) || (_type == DataType.TIMER)) {
-                address = _start;
-                length = dataSize;
-                pdu[22] = type.getValue();
-            } else {
-                address = _start << 3;
-                length = dataSize << 3;
+            int address;
+            switch (type) {
+                case BIT:
+                case COUNTER:
+                case TIMER:
+                    address = position;
+                    length = dataSize;
+                    pdu[22] = type.getValue();
+                    break;
+                default:
+                    address = position << 3;
+                    length = dataSize << 3;
+                    break;
             }
 
             // Num elements
             S7.setWordAt(pdu, 23, numElements);
             // address into the PLC
             pdu[30] = (byte) (address & 0xff);
-            address = address >> 8;
-            pdu[29] = (byte) (address & 0xff);
-            address = address >> 8;
-            pdu[28] = (byte) (address & 0xff);
+            pdu[29] = (byte) (address >> 8 & 0xff);
+            pdu[28] = (byte) (address >> 16 & 0xff);
 
             // Transport Size
             switch (type) {
@@ -1014,7 +1008,7 @@ public class S7Client implements Client, ReturnCode {
             }
             offset += dataSize;
             totElements -= numElements;
-            _start += numElements * wordSize;
+            position += numElements * wordSize;
         }
         return true;
     }

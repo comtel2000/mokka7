@@ -343,11 +343,19 @@ public class ClientDemo {
     }
 
     public static boolean connect() {
+
         testBegin("connect()");
-        client.setConnectionType(ConnectionType.OP);
+
+        S7Config config = new S7Config();
+        config.setType(ConnectionType.OP);
+        config.setHost(ipAddress);
+        config.setRack(0);
+        config.setSlot(slot);
+
+        client.setConfig(config);
         boolean suc;
         try {
-            suc = client.connect(ipAddress, rack, slot);
+            suc = client.connect();
         } catch (S7Exception e) {
             error(e.getErrorCode());
             testEnd(false);

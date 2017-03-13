@@ -63,24 +63,22 @@ public class PingWatchdogService implements AutoCloseable {
         this.service = Objects.requireNonNull(es);
     }
 
-    public void start(int delay, TimeUnit unit) throws UnknownHostException {
+    public void start(long millis) throws UnknownHostException {
         stop();
         if (host == null || host.isEmpty()) {
             throw new IllegalArgumentException("host must not be null");
         }
-        if (delay < 1) {
-            throw new IllegalArgumentException("delay must be greater 0");
+        if (millis < 11) {
+            throw new IllegalArgumentException("delay must be greater 10 ms");
         }
-        if (timeout < 1) {
-            throw new IllegalArgumentException("delay must be greater 0");
-        }
+
         final InetAddress address = InetAddress.getByName(host);
         final int tout = timeout;
         final Consumer<Throwable> cons = consumer;
         if (cons == null) {
             logger.warn("no registered ping failed consumer");
         }
-        future = service.scheduleWithFixedDelay(() -> ping(address, tout, cons), delay, delay, Objects.requireNonNull(unit));
+        future = service.scheduleWithFixedDelay(() -> ping(address, tout, cons), millis, millis, TimeUnit.MILLISECONDS);
     }
 
     @PreDestroy

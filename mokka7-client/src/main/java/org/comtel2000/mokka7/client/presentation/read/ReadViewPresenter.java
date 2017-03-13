@@ -157,7 +157,7 @@ public class ReadViewPresenter implements Initializable {
     }
 
     @FXML
-    private void read(ActionEvent event) {
+    void read(ActionEvent event) {
         Arrays.fill(buffer, (byte) 0);
         long time = System.currentTimeMillis();
         CompletableService
@@ -167,7 +167,7 @@ public class ReadViewPresenter implements Initializable {
     }
 
     @FXML
-    private void dbget(ActionEvent event) {
+    void dbget(ActionEvent event) {
         Arrays.fill(buffer, (byte) 0);
         long time = System.currentTimeMillis();
         CompletableService.supply(() -> client.dbGet(Integer.valueOf(db.getText()), buffer)).bindRunning(bindings.progressProperty()).onFailed(this::report)
@@ -175,7 +175,7 @@ public class ReadViewPresenter implements Initializable {
     }
 
     @FXML
-    private void dbfill(ActionEvent event) {
+    void dbfill(ActionEvent event) {
         Alert alert = new Alert(AlertType.CONFIRMATION, "Are you sure you want to fill DB block " + db.getText() + "?");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.orElse(ButtonType.CANCEL) != ButtonType.OK) {
@@ -194,7 +194,7 @@ public class ReadViewPresenter implements Initializable {
     }
 
     @FXML
-    private void write(ActionEvent event) {
+    void write(ActionEvent event) {
         String v = value.getText();
         if (v == null || v.isEmpty()) {
             return;

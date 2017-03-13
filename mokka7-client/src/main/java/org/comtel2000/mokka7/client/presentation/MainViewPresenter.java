@@ -22,6 +22,7 @@ import java.util.ResourceBundle;
 import javax.inject.Inject;
 
 import org.comtel2000.mokka7.client.presentation.blocklist.BlockListView;
+import org.comtel2000.mokka7.client.presentation.chart.ChartView;
 import org.comtel2000.mokka7.client.presentation.connect.ConnectView;
 import org.comtel2000.mokka7.client.presentation.info.InfoView;
 import org.comtel2000.mokka7.client.presentation.read.ReadView;
@@ -84,6 +85,7 @@ public class MainViewPresenter implements Initializable {
         tabPane.getTabs().add(buildTab("System Info", new InfoView().getView(), false));
         tabPane.getTabs().add(buildTab("Read/Write", new ReadView().getView(), false));
         tabPane.getTabs().add(buildTab("Block List", new BlockListView().getView(), false));
+        tabPane.getTabs().add(buildTab("Chart", new ChartView().getView(), false));
     }
 
 

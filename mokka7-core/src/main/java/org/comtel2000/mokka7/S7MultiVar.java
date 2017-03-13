@@ -40,53 +40,20 @@ public class S7MultiVar implements ReturnCode, AutoCloseable {
         this.client = client;
     }
 
-    private static S7DataItem adjustWordLength(AreaType area, int db, int start, int amount, DataType type) {
-        int wordSize = DataType.getByteLength(type);
-        if (wordSize == 0) {
-            return null;
-        }
-        if (area == AreaType.CT) {
-            type = DataType.COUNTER;
-        } else if (area == AreaType.TM) {
-            type = DataType.TIMER;
-        }
-
-        if (type == DataType.BIT) {
-            amount = 1; // Only 1 bit can be transferred at time
-        } else if ((type != DataType.COUNTER) && (type != DataType.TIMER)) {
-            amount = amount * wordSize;
-            start = start * 8;
-        }
-        S7DataItem item = new S7DataItem();
-        item.area = area;
-        item.db = db;
-        item.start = start;
-        item.amount = amount;
-        item.type = type;
-        item.result = ERR_ITEM_NOT_AVAILABLE;
-        return item;
-    }
-
-    public boolean add(AreaType area, int db, int start, int amount, DataType type) {
+    public boolean add(AreaType area,DataType type, int db, int start, int amount) {
         if (count >= S7Client.MAX_VARS) {
             return false;
         }
-        S7DataItem item = adjustWordLength(area, db, start, amount, type);
-        if (item == null) {
-            return false;
-        }
+        S7DataItem item = new S7DataItem(area,type, db, start, amount);
         item.data = new byte[item.amount];
         return add(item);
     }
 
-    public boolean add(AreaType area, int db, int start, int amount, DataType type, byte[] data) {
+    public boolean add(AreaType area, DataType type, int db, int start, int amount, byte[] data) {
         if (count >= items.length) {
             return false;
         }
-        S7DataItem item = adjustWordLength(area, db, start, amount, type);
-        if (item == null) {
-            return false;
-        }
+        S7DataItem item = new S7DataItem(area,type, db, start, amount);
         if (data == null || data.length < item.amount) {
             throw new IllegalArgumentException("data length must be equal or greater than: " + item.amount);
         }

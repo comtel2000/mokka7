@@ -75,7 +75,7 @@ public class BlockListViewPresenter implements Initializable {
     }
 
     @FXML
-    private void refresh(ActionEvent event) {
+    void refresh(ActionEvent event) {
         CompletableService.supply(() -> client.getS7BlockList()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update)
                 .start();
     }

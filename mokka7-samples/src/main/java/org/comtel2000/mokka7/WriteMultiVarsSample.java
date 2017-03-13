@@ -1,18 +1,18 @@
 /*
  * PROJECT Mokka7 (fork of Snap7/Moka7)
- * 
+ *
  * Copyright (c) 2017 J.Zimmermann (comtel2000)
- * 
+ *
  * All rights reserved. This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Mokka7 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
  * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE whatever license you
  * decide to adopt.
- * 
+ *
  * Contributors: J.Zimmermann - Mokka7 fork
- * 
+ *
  */
 package org.comtel2000.mokka7;
 
@@ -23,7 +23,7 @@ import com.google.common.primitives.Ints;
 
 public class WriteMultiVarsSample extends ClientRunner {
 
-    final int db = 201;
+    final int db = 1;
 
     public WriteMultiVarsSample() {
         super();
@@ -33,15 +33,15 @@ public class WriteMultiVarsSample extends ClientRunner {
     public void call(S7Client client) throws Exception {
 
         try (S7MultiVar mv = new S7MultiVar(client)) {
-            mv.add(AreaType.DB, db, 0, 1, DataType.BYTE, new byte[] { 0x09 });
-            mv.add(AreaType.DB, db, 1, 1, DataType.BYTE, new byte[] { 0x08 });
-            mv.add(AreaType.DB, db, 2, 1, DataType.BYTE, new byte[] { 0x07 });
-            mv.add(AreaType.DB, db, 3, 1, DataType.BYTE, new byte[] { 0x06 });
+            mv.add(AreaType.DB, DataType.BYTE, db, 0, 1, new byte[] { 0x09 });
+            mv.add(AreaType.DB, DataType.BYTE, db, 1, 1, new byte[] { 0x08 });
+            mv.add(AreaType.DB, DataType.BYTE, db, 2, 1, new byte[] { 0x07 });
+            mv.add(AreaType.DB, DataType.BYTE, db, 3, 1, new byte[] { 0x06 });
 
-            mv.add(AreaType.DB, db, 4, 1, DataType.BYTE, new byte[] { 0x09 });
-            mv.add(AreaType.DB, db, 5, 1, DataType.BYTE, new byte[] { 0x08 });
-            mv.add(AreaType.DB, db, 6, 1, DataType.BYTE, new byte[] { 0x07 });
-            mv.add(AreaType.DB, db, 7, 1, DataType.BYTE, new byte[] { 0x06 });
+            mv.add(AreaType.DB, DataType.BYTE, db, 4, 1, new byte[] { 0x09 });
+            mv.add(AreaType.DB, DataType.BYTE, db, 5, 1, new byte[] { 0x08 });
+            mv.add(AreaType.DB, DataType.BYTE, db, 6, 1, new byte[] { 0x07 });
+            mv.add(AreaType.DB, DataType.BYTE, db, 7, 1, new byte[] { 0x06 });
 
             mv.write();
         }
