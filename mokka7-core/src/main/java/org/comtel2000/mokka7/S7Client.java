@@ -72,7 +72,7 @@ public class S7Client implements Client, ReturnCode {
 
     private int recvTimeout = RECV_TIMEOUT;
 
-    private final int MAX_INC_COUNT = 65535;
+    private final static int MAX_INC_COUNT = 0xffff;
 
     private final AtomicInteger counter = new AtomicInteger(-1);
 
@@ -93,8 +93,12 @@ public class S7Client implements Client, ReturnCode {
         this.config = Objects.requireNonNull(config);
     }
 
+    private void resetCounter() {
+        counter.set(-1);
+    }
+
     private int incrementAndGet() {
-        if (counter.compareAndSet(MAX_INC_COUNT, -1)) {
+        if (counter.compareAndSet(MAX_INC_COUNT, 0)) {
             return 0;
         }
         return counter.incrementAndGet();
@@ -225,7 +229,7 @@ public class S7Client implements Client, ReturnCode {
     @Override
     public S7BlockList getS7BlockList() throws S7Exception {
 
-        S7.setSwapWordAt(S7_BL, 11, incrementAndGet());
+        S7.setWordAt(S7_BL, 11, incrementAndGet());
         if (sendPacket(S7_BL)) {
             int length = recvIsoPacket();
             if (length < 28) {
@@ -337,6 +341,7 @@ public class S7Client implements Client, ReturnCode {
     }
 
     private boolean updateNegotiatePduLength() throws S7Exception {
+        resetCounter();
         // Set PDU Size Requested
         S7.setWordAt(S7_PN, 23, DEFAULT_PDU_SIZE_REQUESTED);
         if (sendPacket(S7_PN)) {
@@ -421,6 +426,7 @@ public class S7Client implements Client, ReturnCode {
             throw buildException(ERR_TOO_MANY_ITEMS);
         }
 
+        S7.setWordAt(S7_MRD_HEADER, 11, incrementAndGet());
         // Fills Header
         System.arraycopy(S7_MRD_HEADER, 0, pdu, 0, S7_MRD_HEADER.length);
         S7.setWordAt(pdu, 13, (itemsCount * s7Item.length + 2));
@@ -512,6 +518,9 @@ public class S7Client implements Client, ReturnCode {
         if (itemsCount > MAX_VARS) {
             throw buildException(ERR_TOO_MANY_ITEMS);
         }
+        
+        S7.setWordAt(S7_MRD_HEADER, 11, incrementAndGet());
+        
         // Fills Header
         System.arraycopy(S7_MWR_HEADER, 0, pdu, 0, S7_MWR_HEADER.length);
         parLength = itemsCount * S7_MWR_PARAM.length + 2;
@@ -654,8 +663,10 @@ public class S7Client implements Client, ReturnCode {
 
             sizeRequested = numElements * wordSize;
 
+            S7.setWordAt(S7_RW, 11, incrementAndGet());
             // Setup the telegram
             System.arraycopy(S7_RW, 0, pdu, 0, SIZE_RD);
+
             // Set DB Number
             pdu[27] = area.getValue();
             // Set area
@@ -710,17 +721,16 @@ public class S7Client implements Client, ReturnCode {
         boolean done = false;
         boolean first = true;
         byte seq_in = 0x00;
-        int seq_out = 0x0000;
 
         szl.dataSize = 0;
         do {
             if (first) {
-                S7.setWordAt(S7_SZL_FIRST, 11, ++seq_out);
+                S7.setWordAt(S7_SZL_FIRST, 11, incrementAndGet());
                 S7.setWordAt(S7_SZL_FIRST, 29, id);
                 S7.setWordAt(S7_SZL_FIRST, 31, index);
                 sendPacket(S7_SZL_FIRST);
             } else {
-                S7.setWordAt(S7_SZL_NEXT, 11, ++seq_out);
+                S7.setWordAt(S7_SZL_NEXT, 11, incrementAndGet());
                 pdu[24] = seq_in;
                 sendPacket(S7_SZL_NEXT);
             }
@@ -926,7 +936,7 @@ public class S7Client implements Client, ReturnCode {
             final byte[] buffer) throws S7Exception {
         int maxElements = (pduLength - 35) / wordSize; // 35 = Reply telegram header
         int totElements = amount;
-        int offset = 0;
+        int offset = start;
         int position = start;
         while (totElements > 0) {
             int numElements = totElements;
@@ -937,6 +947,7 @@ public class S7Client implements Client, ReturnCode {
             int dataSize = numElements * wordSize;
             int isoSize = SIZE_WR + dataSize;
 
+            S7.setWordAt(S7_RW, 11, incrementAndGet());
             // setup the telegram
             System.arraycopy(S7_RW, 0, pdu, 0, SIZE_WR);
             // Whole telegram Size

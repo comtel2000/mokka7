@@ -27,13 +27,9 @@ import org.comtel2000.mokka7.util.ReturnCode;
  * @author comtel
  *
  */
-public class S7DataItem {
+public class S7DataItem extends DataItem{
 
-    public AreaType area;
-    public DataType type;
     public int result;
-    public int db;
-    public int start;
     public int amount;
     public byte[] data;
 
@@ -42,6 +38,7 @@ public class S7DataItem {
     }
 
     public S7DataItem(AreaType area, DataType type, int db, int start, int amount, byte[] data) {
+        super(area, type, db, start);
         int wordSize = DataType.getByteLength(Objects.requireNonNull(type));
         switch (Objects.requireNonNull(area)) {
             case CT:
@@ -76,6 +73,12 @@ public class S7DataItem {
         this.db = db;
         this.result = ReturnCode.ERR_ITEM_NOT_AVAILABLE;
         this.data = data != null ? data : new byte[this.amount];
+    }
+
+    @Override
+    public String toString() {
+        return "S7DataItem [" + (area != null ? "area=" + area + ", " : "") + (type != null ? "type=" + type + ", " : "") + "result=" + result + ", db=" + db
+                + ", start=" + start + ", amount=" + amount + ", " + (data != null ? "data.length=" + data.length : "") + "]";
     }
 
 }

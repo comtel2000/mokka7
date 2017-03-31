@@ -227,7 +227,6 @@ public class ChartViewPresenter implements Initializable {
     @FXML
     void toggleService(ActionEvent event) {
 
-        System.err.println(service.isRunning());
         if (service.isRunning()) {
             service.stop();
             return;

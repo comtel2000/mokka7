@@ -27,6 +27,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
+import org.comtel2000.mokka7.block.DataItem;
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.DataType;
 import org.comtel2000.mokka7.util.S7;
 import org.junit.Assert;
 import org.junit.Test;
@@ -201,5 +204,75 @@ public class S7Test {
         S7.setS7StringAt(buffer, 0, 10, value);
         assertEquals(value, S7.getS7StringAt(buffer, 0));
     }
+
+    @Test
+    public void testBuildDataItem() {
+        DataItem item = S7.buildDataItem("DB200.DBX34.0");
+        assertEquals(AreaType.DB, item.area);
+        assertEquals(DataType.BIT, item.type);
+        assertEquals(200, item.db);
+        assertEquals(34, item.start);
+        assertEquals(0, item.bitPos);
+        
+        item = S7.buildDataItem("DB200.DBX34.7");
+        assertEquals(AreaType.DB, item.area);
+        assertEquals(DataType.BIT, item.type);
+        assertEquals(200, item.db);
+        assertEquals(34, item.start);
+        assertEquals(7, item.bitPos);
+        
+        item = S7.buildDataItem("DB200.DBX34");
+        assertEquals(AreaType.DB, item.area);
+        assertEquals(DataType.BIT, item.type);
+        assertEquals(200, item.db);
+        assertEquals(34, item.start);
+        assertEquals(0, item.bitPos);
+        
+        item = S7.buildDataItem("DB11.DBB0");
+        assertEquals(AreaType.DB, item.area);
+        assertEquals(DataType.BYTE, item.type);
+        assertEquals(11, item.db);
+        assertEquals(0, item.start);
+
+        item = S7.buildDataItem("DB111.DBB210");
+        assertEquals(AreaType.DB, item.area);
+        assertEquals(DataType.BYTE, item.type);
+        assertEquals(111, item.db);
+        assertEquals(210, item.start);
+        
+        item = S7.buildDataItem("DB1.DBW12");
+        assertEquals(AreaType.DB, item.area);
+        assertEquals(DataType.WORD, item.type);
+        assertEquals(1, item.db);
+        assertEquals(12, item.start);
+        
+        item = S7.buildDataItem("DB0.DBD0");
+        assertEquals(AreaType.DB, item.area);
+        assertEquals(DataType.DWORD, item.type);
+        assertEquals(0, item.db);
+        assertEquals(0, item.start);
+        
+        item = S7.buildDataItem("M12");
+        assertEquals(AreaType.MK, item.area);
+        assertEquals(DataType.BYTE, item.type);
+        assertEquals(0, item.db);
+        assertEquals(12, item.start);
+        
+        item = S7.buildDataItem("M12.0");
+        assertEquals(AreaType.MK, item.area);
+        assertEquals(DataType.BIT, item.type);
+        assertEquals(0, item.db);
+        assertEquals(12, item.start);
+        assertEquals(0, item.bitPos);
+        
+        item = S7.buildDataItem("M1.7");
+        assertEquals(AreaType.MK, item.area);
+        assertEquals(DataType.BIT, item.type);
+        assertEquals(0, item.db);
+        assertEquals(1, item.start);
+        assertEquals(7, item.bitPos);
+    }
+
+
 
 }

@@ -25,7 +25,11 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.function.Consumer;
 
+import org.comtel2000.mokka7.block.DataItem;
+import org.comtel2000.mokka7.block.S7DataItem;
 import org.comtel2000.mokka7.block.S7Timer;
+import org.comtel2000.mokka7.type.AreaType;
+import org.comtel2000.mokka7.type.DataType;
 
 /**
  * Step 7 Constants and Conversion helper class
@@ -359,17 +363,53 @@ public class S7 {
         }
     }
 
-    protected static void binaryDump(byte b) {
-        System.out.println(Integer.toBinaryString(b & 255 | 256).substring(1));
+    public static DataItem buildDataItem(String address) {
+        try {
+            DataItem item;
+            int i0 = address.indexOf('.');
+            switch (address.charAt(0)) {
+                case 'D':
+                    if (i0 < 1){
+                        throw new IllegalArgumentException(String.format("invalid DB address: %s", address));
+                    }
+
+                    int i1 = address.indexOf('.', i0 + 1);
+                    int db = Integer.parseUnsignedInt(address.substring(2, i0));
+                    DataType type;
+                    switch (address.charAt(i0 + 3)) {
+                        case 'X':
+                            type = DataType.BIT;
+                            break;
+                        case 'B':
+                            type = DataType.BYTE;
+                            break;
+                        case 'W':
+                            type = DataType.WORD;
+                            break;
+                        case 'D':
+                            type = DataType.DWORD;
+                            break;
+                        default:
+                            throw new IllegalArgumentException(String.format("invalid DB address: %s", address));
+                    }
+                    int start = Integer.parseUnsignedInt(address.substring(i0 + 4, i1 > 0 ? i1 : address.length()));
+                    item = new DataItem(AreaType.DB, type, db, start, i1 < 1 ? 0 : Integer.parseUnsignedInt(address.substring(i1 + 1, address.length())));
+                    break;
+                case 'M':
+                    int startM = Integer.parseUnsignedInt(address.substring(1, i0 > 1 ? i0 : address.length()));
+                    item = new DataItem(AreaType.MK, i0 > 1 ? DataType.BIT : DataType.BYTE, 0, startM, i0 < 1 ? 0 : Integer.parseUnsignedInt(address.substring(i0 + 1, address.length())));
+                    break;
+                default:
+                    throw new IllegalArgumentException(String.format("invalid Memory address: %s", address));
+            }
+            return item;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(String.format("address: %s not parsable", address), e);
+        }
+
     }
 
-    protected static void binaryDump(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        if (bytes != null) {
-            for (byte b : bytes) {
-                sb.append(Integer.toBinaryString(b & 255 | 256).substring(1));
-            }
-        }
-        System.out.println(sb.toString());
-    }
+
 }

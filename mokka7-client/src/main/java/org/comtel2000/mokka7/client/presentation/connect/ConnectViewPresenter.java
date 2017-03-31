@@ -122,6 +122,7 @@ public class ConnectViewPresenter implements Initializable {
 
     @FXML
     void connect() {
+        reset();
         bindings.statusTextProperty().set("try to connect to: " + host.getText());
         CompletableService.supply(() -> client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(), slot.getSelectionModel().getSelectedItem()))
                 .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields).start();
@@ -158,7 +159,7 @@ public class ConnectViewPresenter implements Initializable {
                 logger.error(e.getMessage(), e);
             }
             bindings.statusTextProperty().set("connected to: " + host.getText());
-            CompletableService.supply(() -> client.getOrderCode()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update)
+            CompletableService.supply(() -> client.getOrderCode()).bindRunning(bindings.progressProperty()).onFailed(this::report).onComplete((o, th) -> update(o))
                     .start();
         } else {
             bindings.statusTextProperty().set("error code: " + result);
@@ -171,7 +172,7 @@ public class ConnectViewPresenter implements Initializable {
             label1.setText(code.getCode());
             label2.setText("v." + code.getFirmware());
         }
-        CompletableService.supply(() -> client.getCpInfo()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
+        CompletableService.supply(() -> client.getCpInfo()).bindRunning(bindings.progressProperty()).onFailed(this::report).onComplete((o, th) -> update(o)).start();
     }
 
     private void update(S7CpInfo info) {
@@ -182,7 +183,7 @@ public class ConnectViewPresenter implements Initializable {
             label4.setText("Max Con: " + info.maxConnections);
             label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
         }
-        CompletableService.supply(() -> client.getCpuInfo()).bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::update).start();
+        CompletableService.supply(() -> client.getCpuInfo()).bindRunning(bindings.progressProperty()).onFailed(this::report).onComplete((o, th) -> update(o)).start();
     }
 
     private void update(S7CpuInfo info) {

@@ -128,7 +128,7 @@ public class ReadViewPresenter implements Initializable {
         dataType.disableProperty().bind(bindings.progressProperty());
         db.disableProperty().bind(bindings.progressProperty().or(area.getSelectionModel().selectedItemProperty().isNotEqualTo(AreaType.DB)));
         start.disableProperty().bind(bindings.progressProperty());
-        amount.disableProperty().bind(bindings.progressProperty());
+        amount.disableProperty().bind(bindings.progressProperty().or(dataType.getSelectionModel().selectedItemProperty().isEqualTo(DataType.BIT)));
         value.disableProperty().bind(bindings.progressProperty());
 
         table.setPrefWidth(600);
@@ -159,11 +159,12 @@ public class ReadViewPresenter implements Initializable {
     @FXML
     void read(ActionEvent event) {
         Arrays.fill(buffer, (byte) 0);
+        int pos = Integer.valueOf(start.getText());
         long time = System.currentTimeMillis();
         CompletableService
-                .supply(() -> client.readArea(area.getSelectionModel().getSelectedItem(), Integer.valueOf(db.getText()), Integer.valueOf(start.getText()),
-                        Integer.valueOf(amount.getText()), dataType.getSelectionModel().getSelectedItem(), buffer))
-                .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded((size) -> updateTable(size, time)).start();
+                .supply(() -> client.readArea(area.getSelectionModel().getSelectedItem(), Integer.valueOf(db.getText()), pos, Integer.valueOf(amount.getText()),
+                        dataType.getSelectionModel().getSelectedItem(), buffer))
+                .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded((size) -> updateTable(pos, size, time)).start();
     }
 
     @FXML
@@ -171,7 +172,7 @@ public class ReadViewPresenter implements Initializable {
         Arrays.fill(buffer, (byte) 0);
         long time = System.currentTimeMillis();
         CompletableService.supply(() -> client.dbGet(Integer.valueOf(db.getText()), buffer)).bindRunning(bindings.progressProperty()).onFailed(this::report)
-                .onSucceeded((size) -> updateTable(size, time)).start();
+                .onSucceeded((size) -> updateTable(0, size, time)).start();
     }
 
     @FXML
@@ -187,7 +188,7 @@ public class ReadViewPresenter implements Initializable {
             Arrays.fill(buffer, fill);
             long time = System.currentTimeMillis();
             CompletableService.supply(() -> client.dbFill(Integer.valueOf(db.getText()), fill)).bindRunning(bindings.progressProperty()).onFailed(this::report)
-                    .onSucceeded((size) -> updateTable(size, time)).start();
+                    .onSucceeded((size) -> updateTable(0, size, time)).start();
         } catch (Exception e) {
             report(new Exception("parse " + value.getText() + " to byte failed", e));
         }
@@ -199,57 +200,52 @@ public class ReadViewPresenter implements Initializable {
         if (v == null || v.isEmpty()) {
             return;
         }
+        int pos = Integer.valueOf(start.getText());
         int size;
         try {
-            size = updateBytes(buffer, Integer.valueOf(start.getText()), dataType.getSelectionModel().getSelectedItem(), v, Integer.valueOf(amount.getText()));
+            size = updateBytes(buffer, pos, dataType.getSelectionModel().getSelectedItem(), v, Integer.valueOf(amount.getText()));
         } catch (Exception e) {
             report(new Exception("write " + dataType.getSelectionModel().getSelectedItem() + " failed", e));
             return;
         }
 
         long time = System.currentTimeMillis();
+
         CompletableService
-                .supply(() -> client.writeArea(area.getSelectionModel().getSelectedItem(), Integer.valueOf(db.getText()), Integer.valueOf(start.getText()),
+                .supply(() -> client.writeArea(area.getSelectionModel().getSelectedItem(), Integer.valueOf(db.getText()), pos,
                         Integer.valueOf(amount.getText()), dataType.getSelectionModel().getSelectedItem(), buffer))
-                .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded((b) -> updateTable(b, size, time)).start();
+                .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded((b) -> updateTable(b, pos, size, time)).start();
     }
 
-    private byte parseByte(String value) throws Exception {
-        if (value == null || value.trim().isEmpty()) {
-            return 0;
-        }
-        return (byte) (Integer.valueOf(value, 16) & 0xFF);
-    }
 
-    private void updateTable(boolean write, int size, long time) {
+
+    private void updateTable(boolean write, int pos, int size, long time) {
         if (size < 1 || !write) {
             table.setData(new byte[0]);
             return;
         }
-        table.setData(Arrays.copyOfRange(buffer, 0, size));
+        table.setData(Arrays.copyOfRange(buffer, 0, pos + size));
         bindings.statusTextProperty().set(String.format("write (bytes: %d) done in %dms", size, System.currentTimeMillis() - time));
     }
 
-    private void updateTable(int size, long time) {
+    private void updateTable(int pos, int size, long time) {
         if (size < 1) {
             table.setData(new byte[0]);
             return;
         }
-        table.setData(Arrays.copyOfRange(buffer, 0, size));
-        //table.titleProperty().set(createTitle());
+        table.setData(Arrays.copyOfRange(buffer, 0, pos + size));
+        // table.titleProperty().set(createTitle());
         String title = createTitle();
-        bindings.statusTextProperty()
-                .set(String.format("read %s (bytes: %d) done in %dms", title, size, System.currentTimeMillis() - time));
+        bindings.statusTextProperty().set(String.format("read %s (bytes: %d) done in %dms", title, size, System.currentTimeMillis() - time));
     }
 
     private String createTitle() {
         switch (area.getSelectionModel().getSelectedItem()) {
             case DB:
-                return String.format("%s%s.%s%s [%s]", area.getSelectionModel().getSelectedItem(), db.getText(),
-                        toString(dataType.getSelectionModel().getSelectedItem()), start.getText(), amount.getText());
+                return String.format("DB%s.%s%s [%s]", db.getText(), toString(dataType.getSelectionModel().getSelectedItem()), start.getText(),
+                        amount.getText());
             case MK:
-                return String.format("%s%s (%s) [%s]", area.getSelectionModel().getSelectedItem(), start.getText(),
-                        dataType.getSelectionModel().getSelectedItem(), amount.getText());
+                return String.format("M%s (%s) [%s]", start.getText(), dataType.getSelectionModel().getSelectedItem(), amount.getText());
             default:
                 return String.format("%s %s (%s) [%s]", area.getSelectionModel().getSelectedItem(), start.getText(),
                         dataType.getSelectionModel().getSelectedItem(), amount.getText());
@@ -271,35 +267,45 @@ public class ReadViewPresenter implements Initializable {
         }
     }
 
+    private static byte parseByte(String value) throws Exception {
+        if (value == null || value.trim().isEmpty()) {
+            return 0;
+        }
+        return (byte) (Integer.valueOf(value, 16) & 0xFF);
+    }
+
     private static int updateBytes(byte[] buffer, int pos, DataType type, String value, int amount) throws Exception {
         switch (type) {
             case BIT:
-                boolean b = "true".equals(value) || "1".equals(value);
-                for (int i = pos; i < amount; i++) {
-                    S7.setBitAt(buffer, i, 0, b);
-                }
-                return amount;
+                amount = 1;
+                boolean b = "true".equalsIgnoreCase(value) || "1".equals(value);
+                S7.setBitAt(buffer, pos, 0, b);
+                break;
             case BYTE:
-                byte by = (byte) (Integer.valueOf(value) & 0xFF);
-                for (int i = pos; i < amount; i++) {
-                    S7.setByteAt(buffer, i, by);
+                byte by = parseByte(value);
+                for (int i = 0; i < amount; i++) {
+                    S7.setByteAt(buffer, pos + i, by);
                 }
-                return amount;
+                break;
             case WORD:
+                amount = amount * 2;
                 int word = Short.valueOf(value);
-                for (int i = pos; i < amount; i = i + 2) {
-                    S7.setWordAt(buffer, i, word);
+                for (int i = 0; i < amount; i = i + 2) {
+                    S7.setWordAt(buffer, pos + i, word);
                 }
-                return amount * 2;
+                break;
             case DWORD:
+                amount = amount * 4;
                 int dword = Integer.valueOf(value);
-                for (int i = pos; i < amount; i = i + 4) {
-                    S7.setDWordAt(buffer, i, dword);
+                for (int i = 0; i < amount; i = i + 4) {
+                    S7.setDWordAt(buffer, pos + i, dword);
                 }
-                return amount * 4;
+                break;
             default:
-                return 0;
+                amount = 0;
+                break;
         }
+        return amount;
     }
 
     private void report(Throwable th) {

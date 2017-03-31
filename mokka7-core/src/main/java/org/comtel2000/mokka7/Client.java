@@ -110,7 +110,9 @@ public interface Client {
 
     /** S7 get Block Info Request Header (contains also ISO Header and COTP Header) */
     static final byte S7_BI[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x25, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x07,
-            (byte) 0x00, (byte) 0x00, (byte) 0x05, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x01, (byte) 0x12,
+            (byte) 0x00, (byte) 0x00,
+            (byte) 0x05, (byte) 0x00,
+            (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x01, (byte) 0x12,
             (byte) 0x04, (byte) 0x11, (byte) 0x43, (byte) 0x03, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x08, (byte) 0x30, (byte) 0x41,
             // Block Type
             (byte) 0x30, (byte) 0x30, (byte) 0x30, (byte) 0x30, (byte) 0x30,
@@ -147,10 +149,11 @@ public interface Client {
 
     /** S7 PDU Negotiation Telegram (contains also ISO Header and COTP Header) */
     static final byte S7_PN[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x19, (byte) 0x02, (byte) 0xf0,
-
             (byte) 0x80, // TPKT + COTP (see above for info)
-
-            (byte) 0x32, (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0xf0,
+            (byte) 0x32, (byte) 0x01,
+            (byte) 0x00, (byte) 0x00, // Redundancy identification
+            (byte) 0xff, (byte) 0xff, // Protocol Data Unit Reference (init)
+            (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0xf0,
             (byte) 0x00, (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x01, (byte) 0x00,
 
             (byte) 0x1e // PDU length Requested = HI-LO 480 bytes
@@ -165,7 +168,7 @@ public interface Client {
             (byte) 0x32, // S7 Protocol ID
             (byte) 0x01, // Job Type
             (byte) 0x00, (byte) 0x00, // Redundancy identification
-            (byte) 0x05, (byte) 0x00, // PDU Reference
+            (byte) 0x00, (byte) 0x00, // Protocol Data Unit Reference
             (byte) 0x00, (byte) 0x0e, // Parameters length
             (byte) 0x00, (byte) 0x00, // Data length = Size(bytes) + 4
             (byte) 0x04, // Function 4 Read Var, 5 Write Var
@@ -201,20 +204,25 @@ public interface Client {
 
     /** S7 Set Session Password */
     static final byte S7_SET_PWD[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x25, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x07,
-            (byte) 0x00, (byte) 0x00, (byte) 0x27, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x01, (byte) 0x12,
+            (byte) 0x00, (byte) 0x00, // Redundancy identification
+            (byte) 0x27, (byte) 0x00, // Protocol Data Unit Reference
+            (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x01, (byte) 0x12,
             (byte) 0x04, (byte) 0x11, (byte) 0x45, (byte) 0x01, (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x08,
             // 8 Char Encoded Password
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
 
     /** S7 STOP request */
     static final byte S7_STOP[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x01,
-            (byte) 0x00, (byte) 0x00, (byte) 0x0e, (byte) 0x00, (byte) 0x00, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x29, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00,  // Redundancy identification
+            (byte) 0x0e, (byte) 0x00,  // Protocol Data Unit Reference
+            (byte) 0x00, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x29, (byte) 0x00, (byte) 0x00,
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x09, (byte) 0x50, (byte) 0x5f, (byte) 0x50, (byte) 0x52, (byte) 0x4f, (byte) 0x47, (byte) 0x52,
             (byte) 0x41, (byte) 0x4d };
 
     /** SZL First telegram request */
     static final byte S7_SZL_FIRST[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x07,
-            (byte) 0x00, (byte) 0x00, (byte) 0x05, (byte) 0x00, // Sequence out
+            (byte) 0x00, (byte) 0x00,  // Redundancy identification
+            (byte) 0x00, (byte) 0x00,  // Protocol Data Unit Reference
             (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x01, (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x44, (byte) 0x01,
             (byte) 0x00, (byte) 0xff, (byte) 0x09, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, // ID
                                                                                                        // (29)
@@ -223,7 +231,9 @@ public interface Client {
 
     /** SZL Next telegram request */
     static final byte S7_SZL_NEXT[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x21, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x07,
-            (byte) 0x00, (byte) 0x00, (byte) 0x06, (byte) 0x00, (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01, (byte) 0x12,
+            (byte) 0x00, (byte) 0x00,  // Redundancy identification
+            (byte) 0x00, (byte) 0x00,  // Protocol Data Unit Reference
+            (byte) 0x00, (byte) 0x0c, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01, (byte) 0x12,
             (byte) 0x08, (byte) 0x12, (byte) 0x44, (byte) 0x01, (byte) 0x01, // Sequence
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
 
@@ -233,7 +243,7 @@ public interface Client {
             0x32, // S7 Protocol ID
             0x01, // Job Type
             0x00, 0x00, // Redundancy identification
-            0x05, 0x00, // PDU Reference
+            0x00, 0x00, // Protocol Data Unit Reference
             0x00, 0x0e, // Parameters length
             0x00, 0x00, // Data length = Size(bytes) + 4
             0x04, // Function 4 Read Var, 5 Write Var
@@ -257,7 +267,7 @@ public interface Client {
             0x32, // S7 Protocol ID
             0x01, // Job Type
             0x00, 0x00, // Redundancy identification
-            0x05, 0x00, // PDU Reference
+            0x00, 0x00, // Protocol Data Unit Reference
             0x00, 0x0e, // Parameters length (idx 13)
             0x00, 0x00, // Data length = Size(bytes) + 4 (idx 15)
             0x05, // Function 5 Write Var
@@ -277,7 +287,7 @@ public interface Client {
 
     /** S7 get Block List */
     static final byte S7_BL[] = { (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x1d, (byte) 0x02, (byte) 0xf0, (byte) 0x80, (byte) 0x32, (byte) 0x07,
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, // [11,12] message global increment
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, // [11,12] Protocol Data Unit Reference
             (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x01, (byte) 0x12, (byte) 0x04, (byte) 0x11, (byte) 0x43, (byte) 0x01,
             (byte) 0x00, (byte) 0x0a, (byte) 0x00, (byte) 0x00, (byte) 0x00 };
 
