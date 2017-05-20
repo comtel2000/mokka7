@@ -50,6 +50,10 @@ public class PingWatchdogService implements AutoCloseable {
 
     private Consumer<Throwable> consumer;
 
+    /**
+     * Initiate the ping service with a internal
+     * {@link ScheduledExecutorService}
+     */
     public PingWatchdogService() {
         this(Executors.newSingleThreadScheduledExecutor((r) -> {
             Thread th = new Thread(r);
@@ -59,10 +63,38 @@ public class PingWatchdogService implements AutoCloseable {
         }));
     }
 
+    /**
+     * Initiate the ping service with a external
+     * {@link ScheduledExecutorService}
+     *
+     * @param es
+     *            external {@link ScheduledExecutorService}
+     */
     public PingWatchdogService(ScheduledExecutorService es) {
         this.service = Objects.requireNonNull(es);
     }
 
+    /**
+     *
+     * @param host
+     * @param millis
+     *            Ping interval in milli seconds
+     * @throws UnknownHostException
+     *             on no or invalid host/ip
+     */
+    public void start(String host, long millis) throws UnknownHostException {
+        setHost(host);
+        start(millis);
+    }
+
+    /**
+     * Start ping service
+     *
+     * @param millis
+     *            Ping interval delay in milliseconds (must be greater than 10)
+     * @throws UnknownHostException
+     *             on no or invalid host/ip
+     */
     public void start(long millis) throws UnknownHostException {
         stop();
         if (host == null || host.isEmpty()) {
@@ -81,6 +113,9 @@ public class PingWatchdogService implements AutoCloseable {
         future = service.scheduleWithFixedDelay(() -> ping(address, tout, cons), millis, millis, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Stop the ping service
+     */
     @PreDestroy
     public void stop() {
         if (future == null) {
@@ -90,6 +125,11 @@ public class PingWatchdogService implements AutoCloseable {
         future = null;
     }
 
+    /**
+     * Check the running state
+     *
+     * @return service is running
+     */
     public boolean isRunning() {
         if (future == null) {
             return false;
@@ -125,26 +165,57 @@ public class PingWatchdogService implements AutoCloseable {
         }
     }
 
+    /**
+     * Set a ping failed consumer that triggers on ping timeout
+     *
+     * @param c
+     *            the ping failed consumer
+     */
     public void setOnPingFailed(Consumer<Throwable> c) {
         this.consumer = c;
     }
 
+    /**
+     * Get the host/ip to ping
+     *
+     * @return host/ip
+     */
     public String getHost() {
         return host;
     }
 
-    public void setHost(String h) {
-        this.host = h;
+    /**
+     * Set the host/ip to ping
+     *
+     * @param host
+     *            the host/ip
+     */
+    public void setHost(String host) {
+        this.host = host;
     }
 
+    /**
+     * Get the timeout in milliseconds to wait for ping response
+     *
+     * @return timeout in milliseconds
+     */
     public int getTimeout() {
         return timeout;
     }
 
+    /**
+     * Set the timeout in milliseconds to wait for ping response
+     *
+     * @param timeout
+     *            milliseconds to wait for ping response
+     */
     public void setTimeout(int timeout) {
         this.timeout = timeout;
     }
 
+    /**
+     * Shutdown the ping service
+     */
     @Override
     public void close() throws Exception {
         service.shutdown();

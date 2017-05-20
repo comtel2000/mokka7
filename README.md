@@ -16,6 +16,15 @@ additional Mokka7 (fork) features (alpha state):
 * MultiVars Read/Write
 * Enhanced API (Java8 required)
 
+## UI Client
+
+![si](https://github.com/comtel2000/mokka7/blob/master/doc/sys_info.png "System Info")
+
+![rw](https://github.com/comtel2000/mokka7/blob/master/doc/read_write.png "Read and Write")
+
+![chart](https://github.com/comtel2000/mokka7/blob/master/doc/chart.png "Chart View")
+
+
 ## Roadmap
 * Async non blocking read/write
 * MultiVars as collections (automatic slit size)

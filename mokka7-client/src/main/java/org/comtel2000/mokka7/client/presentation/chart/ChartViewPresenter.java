@@ -211,9 +211,9 @@ public class ChartViewPresenter implements Initializable {
         ChartDataItem item = new ChartDataItem(area.getSelectionModel().getSelectedItem(), dataType.getSelectionModel().getSelectedItem(),
                 Integer.valueOf(db.getText()), Integer.valueOf(start.getText()));
         item.setMaxHistory(maxHistory.intValue());
-        if (!chartList.getItems().contains(item)) {
-            chartList.getItems().add(item);
-        }
+        chartList.getItems().remove(item);
+        chartList.getItems().add(item);
+
     }
 
     @FXML

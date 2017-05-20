@@ -518,9 +518,9 @@ public class S7Client implements Client, ReturnCode {
         if (itemsCount > MAX_VARS) {
             throw buildException(ERR_TOO_MANY_ITEMS);
         }
-        
+
         S7.setWordAt(S7_MRD_HEADER, 11, incrementAndGet());
-        
+
         // Fills Header
         System.arraycopy(S7_MWR_HEADER, 0, pdu, 0, S7_MWR_HEADER.length);
         parLength = itemsCount * S7_MWR_PARAM.length + 2;
@@ -617,7 +617,8 @@ public class S7Client implements Client, ReturnCode {
         int _amount = amount;
         DataType _type;
         switch (area) {
-            case CT:
+            case CT_INPUTS:
+            case CT_OUTPUTS:
                 _type = DataType.COUNTER;
                 break;
             case TM:
@@ -902,7 +903,8 @@ public class S7Client implements Client, ReturnCode {
         int _amount = amount;
         DataType _type;
         switch (area) {
-            case CT:
+            case CT_INPUTS:
+            case CT_OUTPUTS:
                 _type = DataType.COUNTER;
                 break;
             case TM:

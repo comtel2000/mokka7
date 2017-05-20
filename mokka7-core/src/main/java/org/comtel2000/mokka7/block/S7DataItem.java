@@ -41,7 +41,8 @@ public class S7DataItem extends DataItem{
         super(area, type, db, start);
         int wordSize = DataType.getByteLength(Objects.requireNonNull(type));
         switch (Objects.requireNonNull(area)) {
-            case CT:
+            case CT_INPUTS:
+            case CT_OUTPUTS:
                 this.type = DataType.COUNTER;
                 break;
             case TM:

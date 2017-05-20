@@ -16,6 +16,9 @@
  */
 package org.comtel2000.mokka7.type;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * PLC area types
  *
@@ -23,24 +26,50 @@ package org.comtel2000.mokka7.type;
  *
  */
 public enum AreaType {
+    /** System Information (caller) */
+    SYS_INFO(0x03),
 
-    /** PE area */
+    /** S7 counters */
+    SYSTEM_FLAGS(0x05),
+
+    /** Analog Inputs - System info (200 family) */
+    ANALOG_INPUTS(0x06),
+
+    /** Analog Outputs - System flags (200 family) */
+    ANALOG_OUTPUTS(0x07),
+
+    /** Analog Counter Input area (200 family) */
+    CT_INPUTS(0x1C),
+
+    /** S7 Timer area */
+    TM(0x1D),
+
+    /** Analog Counter Output area (200 family) */
+    CT_OUTPUTS(0x1E),
+
+    /** IEC counters (200 family) */
+    TM_IEC(0x1F),
+
+    /** PE (inputs) instance area */
     PE(0x81),
 
-    /** PA area */
+    /** PA (outputs) instance area */
     PA(0x82),
 
-    /** Marker area */
+    /** Marker (flags) area */
     MK(0x83),
 
-    /** DataBlock area */
+    /** DataBlock (Peripheral I/O) area */
     DB(0x84),
 
-    /** Counter area */
-    CT(0x1C),
+    /** DataBlock area */
+    DI(0x85),
 
-    /** Timer area */
-    TM(0x1D);
+    /** DataBlock (local) area */
+    DB_LOCAL(0x86),
+
+    /** IEC timers (200 family) */
+    TM_V(0x87);
 
     private final byte value;
 
@@ -51,4 +80,7 @@ public enum AreaType {
     public byte getValue() {
         return value;
     }
+
+    public final static List<AreaType> SUPPORTED = Arrays.asList(MK, DB, TM);
+
 }
