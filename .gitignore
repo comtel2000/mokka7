@@ -13,6 +13,7 @@
 
 # IntelliJ #
 *.iml
+.DS_Store
 .idea/*
 
 # Maven #

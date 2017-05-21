@@ -31,6 +31,7 @@ public class StatusBinding {
 
     private final BooleanProperty connected = new SimpleBooleanProperty(false);
     private final BooleanProperty progress = new SimpleBooleanProperty(false);
+    private final BooleanProperty pingWatchdog = new SimpleBooleanProperty(false);
     private final StringProperty statusText = new SimpleStringProperty("");
 
     private final ObjectProperty<byte[]> hexData = new SimpleObjectProperty<>();
@@ -47,6 +48,10 @@ public class StatusBinding {
         return connected;
     }
 
+    public final BooleanProperty pingWatchdogProperty() {
+        return pingWatchdog;
+    }
+    
     public final StringProperty statusTextProperty() {
         return statusText;
     }

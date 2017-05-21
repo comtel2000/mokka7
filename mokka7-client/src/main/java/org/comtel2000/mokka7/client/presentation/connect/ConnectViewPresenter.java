@@ -37,176 +37,202 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 public class ConnectViewPresenter implements Initializable {
 
-    private final static org.slf4j.Logger logger = LoggerFactory.getLogger(ConnectViewPresenter.class);
+	private final static org.slf4j.Logger logger = LoggerFactory.getLogger(ConnectViewPresenter.class);
 
-    @Inject
-    private StatusBinding bindings;
+	@Inject
+	private StatusBinding bindings;
 
-    @Inject
-    private SessionManager session;
+	@Inject
+	private SessionManager session;
 
-    @Inject
-    private MonitoredS7Client client;
+	@Inject
+	private MonitoredS7Client client;
 
-    @Inject
-    private PingWatchdogService pingService;
+	@Inject
+	private PingWatchdogService pingService;
 
-    @FXML
-    private Button connect;
+	@FXML
+	private Button connect;
 
-    @FXML
-    private Button disconnect;
+	@FXML
+	private Button disconnect;
 
-    @FXML
-    private TextField host;
+	@FXML
+	private TextField host;
 
-    @FXML
-    private ComboBox<Integer> rack;
+	@FXML
+	private ComboBox<Integer> rack;
 
-    @FXML
-    private ComboBox<Integer> slot;
+	@FXML
+	private ComboBox<Integer> slot;
 
+	@FXML
+	private CheckBox watchdog;
 
-    @FXML
-    private Label label0;
+	@FXML
+	private Label label0;
 
-    @FXML
-    private Label label1;
+	@FXML
+	private Label label1;
 
-    @FXML
-    private Label label2;
+	@FXML
+	private Label label2;
 
-    @FXML
-    private Label label3;
+	@FXML
+	private Label label3;
 
-    @FXML
-    private Label label4;
+	@FXML
+	private Label label4;
 
-    @FXML
-    private Label label5;
+	@FXML
+	private Label label5;
 
-    @Override
-    public void initialize(URL url, ResourceBundle rb) {
+	@Override
+	public void initialize(URL url, ResourceBundle rb) {
 
-        rack.getItems().addAll(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8));
-        rack.getSelectionModel().select(0);
-        slot.getItems().addAll(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8));
-        slot.getSelectionModel().select(0);
+		rack.getItems().addAll(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8));
+		rack.getSelectionModel().select(0);
+		slot.getItems().addAll(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8));
+		slot.getSelectionModel().select(0);
 
-        session.bind(host.textProperty(), "connect.host");
+		session.bind(host.textProperty(), "connect.host");
 
-        BooleanBinding disabled = bindings.connectedProperty().or(bindings.progressProperty());
-        connect.disableProperty().bind(disabled.or(host.textProperty().isEmpty()));
-        host.disableProperty().bind(disabled);
-        rack.disableProperty().bind(disabled);
-        slot.disableProperty().bind(disabled);
-        disconnect.disableProperty().bind(bindings.connectedProperty().not().or(bindings.progressProperty()));
+		BooleanBinding disabled = bindings.connectedProperty().or(bindings.progressProperty());
+		connect.disableProperty().bind(disabled.or(host.textProperty().isEmpty()));
+		host.disableProperty().bind(disabled);
+		rack.disableProperty().bind(disabled);
+		slot.disableProperty().bind(disabled);
+		watchdog.disableProperty().bind(disabled);
+		disconnect.disableProperty().bind(bindings.connectedProperty().not().or(bindings.progressProperty()));
 
+		bindings.connectedProperty().addListener((l, a, con) -> update(con));
+		pingService.setOnPingFailed(this::pingFailed);
 
-        bindings.connectedProperty().addListener((l, a, con) -> update(con));
-        pingService.setOnPingFailed(this::pingFailed);
-        reset();
-    }
+		watchdog.selectedProperty().bindBidirectional(bindings.pingWatchdogProperty());
+		session.bind(watchdog.selectedProperty(), "ping.watchdog");
+		reset();
+	}
 
-    private void update(boolean connected) {
-        String text = connected ? String.format("online (%s)", host.getText()) : "offine";
-        label0.setText(text);
-        bindings.statusTextProperty().set(text);
-    }
+	private void update(boolean connected) {
+		String text = connected ? String.format("online (%s)", host.getText()) : "offine";
+		label0.setText(text);
+		if (connected) {
+			bindings.statusTextProperty().set(text);
+		}
+	}
 
-    @FXML
-    void connect() {
-        reset();
-        bindings.statusTextProperty().set("try to connect to: " + host.getText());
-        CompletableService.supply(() -> client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(), slot.getSelectionModel().getSelectedItem()))
-                .bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields).start();
-    }
+	@FXML
+	void connect() {
+		open();
+	}
 
-    @FXML
-    void disconnect() {
-        pingService.stop();
-        CompletableService.supply(() -> {
-            client.disconnect();
-            return true;
-        }).bindRunning(bindings.progressProperty()).onComplete((b, th) -> bindings.connectedProperty().set(client.isConnected())).start();
-    }
+	@FXML
+	void disconnect() {
+		bindings.statusTextProperty().set("connection closed");
+		close();
+	}
 
+	void open() {
+		reset();
+		bindings.statusTextProperty().set("try to connect to: " + host.getText());
+		CompletableService
+				.supply(() -> client.connect(host.getText(), rack.getSelectionModel().getSelectedItem(),
+						slot.getSelectionModel().getSelectedItem()))
+				.bindRunning(bindings.progressProperty()).onFailed(this::report).onSucceeded(this::updateFields)
+				.start();
+	}
 
-    private void pingFailed(Throwable th) {
-        logger.error("ping failed", th);
-        Platform.runLater(() -> bindings.statusTextProperty().set("connection lost to: " + host.getText()));
-        disconnect();
-    }
+	void close() {
+		pingService.stop();
+		CompletableService.supply(() -> {
+			client.disconnect();
+			return true;
+		}).bindRunning(bindings.progressProperty())
+				.onComplete((b, th) -> bindings.connectedProperty().set(client.isConnected())).start();
+	}
 
-    private void updateFields(Boolean result) {
+	private void pingFailed(Throwable th) {
+		logger.error("ping failed", th);
+		close();
+		Platform.runLater(() -> bindings.statusTextProperty().set("connection lost to: " + host.getText()));
 
-        if (result == null) {
-            return;
-        }
-        bindings.connectedProperty().set(result);
-        if (result) {
-            pingService.setHost(host.getText());
-            pingService.setTimeout(2000);
-            try {
-                pingService.start(1000);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            }
-            bindings.statusTextProperty().set("connected to: " + host.getText());
-            CompletableService.supply(() -> client.getOrderCode()).bindRunning(bindings.progressProperty()).onFailed(this::report).onComplete((o, th) -> update(o))
-                    .start();
-        } else {
-            bindings.statusTextProperty().set("error code: " + result);
-        }
-    }
+	}
 
-    private void update(S7OrderCode code) {
-        bindings.orderCodeProperty().set(code);
-        if (code != null) {
-            label1.setText(code.getCode());
-            label2.setText("v." + code.getFirmware());
-        }
-        CompletableService.supply(() -> client.getCpInfo()).bindRunning(bindings.progressProperty()).onFailed(this::report).onComplete((o, th) -> update(o)).start();
-    }
+	private void updateFields(Boolean result) {
 
-    private void update(S7CpInfo info) {
-        bindings.cpInfoProperty().set(info);
-        logger.debug("{}", info);
-        if (info != null) {
-            label3.setText("Max PDU: " + info.maxPduLength);
-            label4.setText("Max Con: " + info.maxConnections);
-            label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
-        }
-        CompletableService.supply(() -> client.getCpuInfo()).bindRunning(bindings.progressProperty()).onFailed(this::report).onComplete((o, th) -> update(o)).start();
-    }
+		if (result == null) {
+			return;
+		}
+		bindings.connectedProperty().set(result);
+		if (result) {
+			pingService.setHost(host.getText());
+			pingService.setTimeout(2000);
+			try {
+				if (bindings.pingWatchdogProperty().get()) {
+					pingService.start(1000);
+				}
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
+			}
+			bindings.statusTextProperty().set("connected to: " + host.getText());
+			CompletableService.supply(() -> client.getOrderCode()).bindRunning(bindings.progressProperty())
+					.onFailed(this::report).onComplete((o, th) -> update(o)).start();
+		} else {
+			bindings.statusTextProperty().set("error code: " + result);
+		}
+	}
 
-    private void update(S7CpuInfo info) {
-        bindings.cpuInfoProperty().set(info);
-    }
+	private void update(S7OrderCode code) {
+		bindings.orderCodeProperty().set(code);
+		if (code != null) {
+			label1.setText(code.getCode());
+			label2.setText("v." + code.getFirmware());
+		}
+		CompletableService.supply(() -> client.getCpInfo()).bindRunning(bindings.progressProperty())
+				.onFailed(this::report).onComplete((o, th) -> update(o)).start();
+	}
 
-    private void reset() {
-        label0.setText(null);
-        label1.setText(null);
-        label2.setText(null);
-        label3.setText(null);
-        label4.setText(null);
-        label5.setText(null);
-    }
+	private void update(S7CpInfo info) {
+		bindings.cpInfoProperty().set(info);
+		logger.debug("{}", info);
+		if (info != null) {
+			label3.setText("Max PDU: " + info.maxPduLength);
+			label4.setText("Max Con: " + info.maxConnections);
+			label5.setText("MPI/Bus: " + info.maxMpiRate + "/" + info.maxBusRate);
+		}
+		CompletableService.supply(() -> client.getCpuInfo()).bindRunning(bindings.progressProperty())
+				.onFailed(this::report).onComplete((o, th) -> update(o)).start();
+	}
 
-    private void report(Throwable th) {
-        if (th != null) {
-            logger.error(th.getMessage(), th);
-            if (th.getCause() != null) {
-                bindings.statusTextProperty().set(String.format("%s (%s)", th.getMessage(), th.getCause().getMessage()));
-            } else {
-                bindings.statusTextProperty().set(th.getMessage());
-            }
-        }
-    }
+	private void update(S7CpuInfo info) {
+		bindings.cpuInfoProperty().set(info);
+	}
+
+	private void reset() {
+		label0.setText(null);
+		label1.setText(null);
+		label2.setText(null);
+		label3.setText(null);
+		label4.setText(null);
+		label5.setText(null);
+	}
+
+	private void report(Throwable th) {
+		if (th != null) {
+			logger.error(th.getMessage(), th);
+			if (th.getCause() != null) {
+				bindings.statusTextProperty()
+						.set(String.format("%s (%s)", th.getMessage(), th.getCause().getMessage()));
+			} else {
+				bindings.statusTextProperty().set(th.getMessage());
+			}
+		}
+	}
 }
