@@ -70,5 +70,13 @@ additional Mokka7 (fork) features (alpha state):
 # License
 Eclipse Public License - v 1.0
 
+Trademarks:
+
+Step7, TIA Portal, S7300, S7400, WinAC, S71200/1500, Sinamics are trademarks of Siemens AG. Other trademarks and logos are the property of their respective owners.
+
+This project is an unofficial pice of software and has nothing in common with the companies above.
+
+THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
 # Special thanks to
 * Dave Nardella for initial API and implementation [Snap7, Moka7, Sharp7](http://snap7.sourceforge.net)
