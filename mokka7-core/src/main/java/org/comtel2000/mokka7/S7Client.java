@@ -938,7 +938,7 @@ public class S7Client implements Client, ReturnCode {
             final byte[] buffer) throws S7Exception {
         int maxElements = (pduLength - 35) / wordSize; // 35 = Reply telegram header
         int totElements = amount;
-        int offset = start;
+        int offset = 0;
         int position = start;
         while (totElements > 0) {
             int numElements = totElements;
