@@ -69,6 +69,13 @@ public class S7Client implements Client, ReturnCode {
     private byte lastPDUType;
 
     private final byte[] pdu = new byte[2048];
+    
+    /**
+     * Instance-specific buffer for thread-safe read/write operations.
+     * Each S7Client instance has its own buffer to prevent concurrent access
+     * issues when multiple PLC clients are used simultaneously.
+     */
+    private final byte[] instanceBuffer = new byte[1024];
 
     private int recvTimeout = RECV_TIMEOUT;
 
@@ -81,7 +88,7 @@ public class S7Client implements Client, ReturnCode {
     }
 
     public S7Client(S7Config config) {
-        Arrays.fill(buffer, (byte) 0);
+        Arrays.fill(instanceBuffer, (byte) 0);
         this.setConfig(config);
     }
 
@@ -91,6 +98,11 @@ public class S7Client implements Client, ReturnCode {
 
     public void setConfig(S7Config config) {
         this.config = Objects.requireNonNull(config);
+    }
+
+    @Override
+    public byte[] getInstanceBuffer() {
+        return instanceBuffer;
     }
 
     private void resetCounter() {

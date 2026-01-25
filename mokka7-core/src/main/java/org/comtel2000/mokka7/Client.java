@@ -44,7 +44,14 @@ import org.comtel2000.mokka7.util.S7;
  */
 public interface Client {
 
-    final byte[] buffer = new byte[1024];
+    /**
+     * Gets an instance-specific buffer for read/write operations.
+     * This method must be implemented by all implementing classes to ensure
+     * thread-safety in concurrent environments with multiple PLC connections.
+     * 
+     * @return a byte buffer instance unique to this client
+     */
+    byte[] getInstanceBuffer();
 
     /** Max number of vars (multiread/write) -> max PDU size */
     public static final int MAX_VARS = 20;
@@ -456,7 +463,7 @@ public interface Client {
     int getIsoExchangeBuffer(byte[] buffer) throws S7Exception;
 
     default Boolean readBit(AreaType area, int db, int start, int bitPos) throws S7Exception {
-        return readBit(area, db, start, bitPos, buffer);
+        return readBit(area, db, start, bitPos, getInstanceBuffer());
     }
 
     default Boolean readBit(AreaType area, int db, int start, int bitPos, byte[] buffer) throws S7Exception {
@@ -467,7 +474,7 @@ public interface Client {
     }
 
     default Byte readByte(AreaType area, int db, int start) throws S7Exception {
-        return readByte(area, db, start, buffer);
+        return readByte(area, db, start, getInstanceBuffer());
     }
 
     default Byte readByte(AreaType area, int db, int start, byte[] buffer) throws S7Exception {
@@ -478,7 +485,7 @@ public interface Client {
     }
 
     default byte[] readBytes(AreaType area, int db, int start, int amount) throws S7Exception {
-        return readBytes(area, db, start, amount, buffer);
+        return readBytes(area, db, start, amount, getInstanceBuffer());
     }
 
     default byte[] readBytes(AreaType area, int db, int start, int amount, byte[] buffer) throws S7Exception {
@@ -489,7 +496,7 @@ public interface Client {
     }
 
     default Integer readInt(AreaType area, int db, int start) throws S7Exception {
-        return readInt(area, db, start, buffer);
+        return readInt(area, db, start, getInstanceBuffer());
     }
 
     default Integer readInt(AreaType area, int db, int start, byte[] buffer) throws S7Exception {
@@ -500,7 +507,7 @@ public interface Client {
     }
 
     default Long readLong(AreaType area, int db, int start) throws S7Exception {
-        return readLong(area, db, start, buffer);
+        return readLong(area, db, start, getInstanceBuffer());
     }
 
     default Long readLong(AreaType area, int db, int start, byte[] buffer) throws S7Exception {
@@ -511,7 +518,7 @@ public interface Client {
     }
 
     default String readString(AreaType area, int db, int start, int length) throws S7Exception {
-        return readString(area, db, start, length, StandardCharsets.UTF_8, buffer);
+        return readString(area, db, start, length, StandardCharsets.UTF_8, getInstanceBuffer());
     }
 
     default String readString(AreaType area, int db, int start, int length, byte[] buffer) throws S7Exception {
@@ -519,7 +526,7 @@ public interface Client {
     }
 
     default String readString(AreaType area, int db, int start, int length, Charset charset) throws S7Exception {
-        return readString(area, db, start, length, charset, buffer);
+        return readString(area, db, start, length, charset, getInstanceBuffer());
     }
 
     default String readString(AreaType area, int db, int start, int length, Charset charset, byte[] buffer) throws S7Exception {
@@ -530,30 +537,35 @@ public interface Client {
     }
 
     default boolean writeBit(AreaType area, int db, int start, int bitPos, boolean value) throws S7Exception {
+        byte[] buf = getInstanceBuffer();
         // reset first byte?
-        S7.setByteAt(buffer, 0, (byte) 0x00);
-        S7.setBitAt(buffer, 0, bitPos, value);
-        return writeArea(area, db, (start * 8) + bitPos, 1, DataType.BIT, buffer);
+        S7.setByteAt(buf, 0, (byte) 0x00);
+        S7.setBitAt(buf, 0, bitPos, value);
+        return writeArea(area, db, (start * 8) + bitPos, 1, DataType.BIT, buf);
     }
 
     default boolean writeByte(AreaType area, int db, int start, byte value) throws S7Exception {
-        S7.setByteAt(buffer, 0, value);
-        return writeArea(area, db, start, 1, DataType.BYTE, buffer);
+        byte[] buf = getInstanceBuffer();
+        S7.setByteAt(buf, 0, value);
+        return writeArea(area, db, start, 1, DataType.BYTE, buf);
     }
 
     default boolean writeBytes(AreaType area, int db, int start, byte[] values) throws S7Exception {
-        System.arraycopy(values, 0, buffer, 0, values.length);
-        return writeArea(area, db, start, values.length, DataType.BYTE, buffer);
+        byte[] buf = getInstanceBuffer();
+        System.arraycopy(values, 0, buf, 0, values.length);
+        return writeArea(area, db, start, values.length, DataType.BYTE, buf);
     }
 
     default boolean writeInt(AreaType area, int db, int start, int value) throws S7Exception {
-        S7.setDIntAt(buffer, 0, value);
-        return writeArea(area, db, start, 1, DataType.DINT, buffer);
+        byte[] buf = getInstanceBuffer();
+        S7.setDIntAt(buf, 0, value);
+        return writeArea(area, db, start, 1, DataType.DINT, buf);
     }
 
     default boolean writeLong(AreaType area, int db, int start, long value) throws S7Exception {
-        S7.setDWordAt(buffer, 0, value);
-        return writeArea(area, db, start, 1, DataType.DWORD, buffer);
+        byte[] buf = getInstanceBuffer();
+        S7.setDWordAt(buf, 0, value);
+        return writeArea(area, db, start, 1, DataType.DWORD, buf);
     }
 
     default boolean writeString(AreaType area, int db, int start, String value) throws S7Exception {
